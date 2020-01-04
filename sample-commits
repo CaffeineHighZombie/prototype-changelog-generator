@@ -1,0 +1,1638 @@
+commit 9b9116c79d626b6356f3dfe0d48c9d990ac412a2
+Author: Keen Yee Liau <kyliau@umich.edu>
+Date:   Fri Dec 20 10:26:24 2019 -0800
+
+    feat(language-service): Append symbol type to hover tooltip (#34515)
+    
+    Now that https://github.com/angular/angular/pull/34177 fixed the `TypeWrapper`
+    to have a proper name, we have the information needed to show the type
+    name in a hover tooltip.
+    
+    PR Close #34515
+
+commit 2dffe65cfdc1329819a5ef0d0f2069efb0b07ff8
+Author: Keen Yee Liau <kyliau@google.com>
+Date:   Wed Dec 18 11:08:31 2019 -0800
+
+    fix(language-service): completions after "let x of |" in ngFor (#34473)
+    
+    This commit fixes a bug in which we do testing for completions.
+    Subsequently, this exposes another bug in our implementation whereby
+    suggestions are not provided in "ngFor" where there should have been.
+    
+    Currently, multiple test cases are grouped together in a single
+    template. This requires the template to be somewhat complete so that
+    test cases that depend on variables declared earlier would pass.
+    
+    Consider the following example:
+    
+    ```
+      template: `
+        <div *ngFor="let ~{for-person}person of ~{for-people}people">
+          <span>Name: {{~{for-interp-person}person.~{for-interp-name}name}}</span>
+          <span>Age: {{person.~{for-interp-age}age}}</span>
+        </div>`,
+    ```
+    
+    In order to test `~{for-interp-person}`, `people` has to be included after
+    `~{for-people}`. This means the test case for `~{for-people}` is not
+    reflective of the actual use case because the variable is already there!
+    In real case, the expression would be incomplete, and our implementation
+    failed to take that into account.
+    
+    This commit breaks such test into individual tests, and fix the bugs in
+    the underlying implementation.
+    
+    PR Close #34473
+
+commit 260a061f9f3e85b567a722cfa2b5aa8a84cfce2a
+Author: Kara Erickson <karakara@google.com>
+Date:   Wed Dec 18 15:53:15 2019 -0800
+
+    docs: release notes for the v9.0.0-rc.7 release
+
+commit cf37c003ffc4e1307a174d6f58e5ed435db68e7e
+Author: crisbeto <crisbeto@abv.bg>
+Date:   Tue Nov 26 19:33:26 2019 +0100
+
+    feat(ivy): error in ivy when inheriting a ctor from an undecorated base (#34460)
+    
+    Angular View Engine uses global knowledge to compile the following code:
+    
+    ```typescript
+    export class Base {
+      constructor(private vcr: ViewContainerRef) {}
+    }
+    
+    @Directive({...})
+    export class Dir extends Base {
+      // constructor inherited from base
+    }
+    ```
+    
+    Here, `Dir` extends `Base` and inherits its constructor. To create a `Dir`
+    the arguments to this inherited constructor must be obtained via dependency
+    injection. View Engine is able to generate a correct factory for `Dir` to do
+    this because via metadata it knows the arguments of `Base`'s constructor,
+    even if `Base` is declared in a different library.
+    
+    In Ivy, DI is entirely a runtime concept. Currently `Dir` is compiled with
+    an ngDirectiveDef field that delegates its factory to `getInheritedFactory`.
+    This looks for some kind of factory function on `Base`, which comes up
+    empty. This case looks identical to an inheritance chain with no
+    constructors, which works today in Ivy.
+    
+    Both of these cases will now become an error in this commit. If a decorated
+    class inherits from an undecorated base class, a diagnostic is produced
+    informing the user of the need to either explicitly declare a constructor or
+    to decorate the base class.
+    
+    PR Close #34460
+
+commit dcc8ff4ce7444c29892f6cd82f60fbf88bebcf95
+Author: crisbeto <crisbeto@abv.bg>
+Date:   Wed Dec 11 17:59:05 2019 +0100
+
+    feat(ivy): throw compilation error when providing undecorated classes (#34460)
+    
+    Adds a compilation error if the consumer tries to pass in an undecorated class into the `providers` of an `NgModule`, or the `providers`/`viewProviders` arrays of a `Directive`/`Component`.
+    
+    PR Close #34460
+
+commit 6057c7a373016d42f80218bdc45602ea6108c73c
+Author: Alex Rickabaugh <alx+alxhub@alxandria.net>
+Date:   Tue Dec 17 12:39:57 2019 -0800
+
+    refactor(ivy): force NG-space error codes for template errors (#34460)
+    
+    The function `makeTemplateDiagnostic` was accepting an error code of type
+    `number`, making it easy to accidentally pass an `ErrorCode` directly and
+    not convert it to an Angular diagnostic code first.
+    
+    This commit refactors `makeTemplateDiagnostic` to accept `ErrorCode` up
+    front, and convert it internally. This is less error-prone.
+    
+    PR Close #34460
+
+commit 498a2ffba37b97247ecb996ded2f431b0f444725
+Author: Alex Rickabaugh <alx+alxhub@alxandria.net>
+Date:   Tue Dec 17 11:53:55 2019 -0800
+
+    fix(ivy): don't produce template diagnostics when scope is invalid (#34460)
+    
+    Previously, ngtsc would perform scope analysis (which directives/pipes are
+    available inside a component's template) and template type-checking of that
+    template as separate steps. If a component's scope was somehow invalid (e.g.
+    its NgModule imported something which wasn't another NgModule), the
+    component was treated as not having a scope. This meant that during template
+    type-checking, errors would be produced for any invalid expressions/usage of
+    other components that should have been in the scope.
+    
+    This commit changes ngtsc to skip template type-checking of a component if
+    its scope is erroneous (as opposed to not present in the first place). Thus,
+    users aren't overwhelmed with diagnostic errors for the template and are
+    only informed of the root cause of the problem: an invalid NgModule scope.
+    
+    Fixes #33849
+    
+    PR Close #34460
+
+commit 047488c5d86b39b87d3d7497c5ff720d2adf81c3
+Author: Alex Rickabaugh <alx+alxhub@alxandria.net>
+Date:   Tue Dec 17 13:29:15 2019 -0800
+
+    refactor(ivy): move NgModule declaration checks to the 'scope' package (#34460)
+    
+    Previously each NgModule trait checked its own scope for valid declarations
+    during 'resolve'. This worked, but caused the LocalModuleScopeRegistry to
+    declare that NgModule scopes were valid even if they contained invalid
+    declarations.
+    
+    This commit moves the generation of diagnostic errors to the
+    LocalModuleScopeRegistry where it belongs. Now the registry can consider an
+    NgModule's scope to be invalid if it contains invalid declarations.
+    
+    PR Close #34460
+
+commit 3959511b80ff8abb55b8c8858a6080472bff1589
+Author: JoostK <joost.koehoorn@gmail.com>
+Date:   Sun Dec 15 20:53:36 2019 +0100
+
+    fix(ivy): avoid duplicate errors in safe navigations and template guards (#34417)
+    
+    The template type checker generates TypeScript expressions for any
+    expression that occurs in a template, so that TypeScript can check it
+    and produce errors. Some expressions as they occur in a template may be
+    translated into TypeScript code multiple times, for instance a binding
+    to a directive input that has a template guard.
+    
+    One example would be the `NgIf` directive, which has a template guard to
+    narrow the type in the template as appropriate. Given the following
+    template:
+    
+    ```typescript
+    @Component({
+      template: '<div *ngIf="person">{{ person.name }}</div>'
+    })
+    class AppComponent {
+      person?: { name: string };
+    }
+    ```
+    
+    A type check block (TCB) with roughly the following structure is
+    created:
+    
+    ```typescript
+    function tcb(ctx: AppComponent) {
+      const t1 = NgIf.ngTypeCtor({ ngIf: ctx.person });
+      if (ctx.person) {
+        "" + ctx.person.name;
+      }
+    }
+    ```
+    
+    Notice how the `*ngIf="person"` binding is present twice: once in the
+    type constructor call and once in the `if` guard. As such, TypeScript
+    will check both instances and would produce duplicate errors, if any
+    were found.
+    
+    Another instance is when the safe navigation operator is used, where an
+    expression such as `person?.name` is emitted into the TCB as
+    `person != null ? person!.name : undefined`. As can be seen, the
+    left-hand side expression `person` occurs twice in the TCB.
+    
+    This commit adds the ability to insert markers into the TCB that
+    indicate that any errors within the expression should be ignored. This
+    is similar to `@ts-ignore`, however it can be applied more granularly.
+    
+    PR Close #34417
+
+commit 024e3b30ac4d87bb2350c9502d07ac5a6278fcc9
+Author: JoostK <joost.koehoorn@gmail.com>
+Date:   Sun Dec 15 15:12:14 2019 +0100
+
+    refactor(ivy): cleanup translation of source spans in type checker (#34417)
+    
+    This commit cleans up the template type checker regarding how
+    diagnostics are produced.
+    
+    PR Close #34417
+
+commit 8c6468a02541697c24634d6a65ff23959494a5f1
+Author: JoostK <joost.koehoorn@gmail.com>
+Date:   Sun Dec 15 14:28:51 2019 +0100
+
+    refactor(ivy): use absolute source spans in type checker (#34417)
+    
+    Previously, the type checker would compute an absolute source span by
+    combining an expression AST node's `ParseSpan` (relative to the start of
+    the expression) together with the absolute offset of the expression as
+    represented in a `ParseSourceSpan`, to arrive at a span relative to the
+    start of the file. This information is now directly available on an
+    expression AST node in the `AST.sourceSpan` property, which can be used
+    instead.
+    
+    PR Close #34417
+
+commit 23595272fe3aad8611909e69264f2ce4a96f8cbd
+Author: Paul Gschwendtner <paulgschwendtner@gmail.com>
+Date:   Wed Dec 18 17:41:24 2019 +0100
+
+    build: use vendored yarn version for bazel node toolchain (#34472)
+    
+    Instead of downloading Yarn separately for Bazel, we could use
+    our existing copy of Yarn that we maintain for CI jobs that do
+    not use Bazel. This ensures we use consistent versions of Yarn
+    across our CI jobs, and also avoids unnecessary downloads to the
+    Bazel mirror server, or Yarn download servers.
+    
+    PR Close #34472
+
+commit 9264f43511a14e72058951dc1ee7597a5b554388
+Author: Pete Bacon Darwin <pete@bacondarwin.com>
+Date:   Wed Dec 18 14:03:05 2019 +0000
+
+    refactor(ngcc): remove private declaration aliases (#34254)
+    
+    Now that the source to typings matching is able to handle
+    aliasing of exports, there is no need to handle aliases in private
+    declarations analysis.
+    
+    These were originally added to cope when the typings files had
+    to use the name that the original source files used when exporting.
+    
+    PR Close #34254
+
+commit 918d8c990904b35ba67ea60c4b985f22fab1e853
+Author: Pete Bacon Darwin <pete@bacondarwin.com>
+Date:   Wed Dec 18 14:03:05 2019 +0000
+
+    refactor(ngcc): slightly improve the info in error messages (#34254)
+    
+    PR Close #34254
+
+commit 31be29a9f302fee7184d1824634d98e03df9caf2
+Author: Pete Bacon Darwin <pete@bacondarwin.com>
+Date:   Wed Dec 18 14:03:05 2019 +0000
+
+    fix(ngcc): use the correct identifiers when updating typings files (#34254)
+    
+    Previously the identifiers used in the typings files were the same as
+    those used in the source files.
+    
+    When the typings files and the source files do not match exactly, e.g.
+    when one of them is flattened, while the other is a deep tree, it is
+    possible for identifiers to be renamed.
+    
+    This commit ensures that the correct identifier is used in typings files
+    when the typings file does not export the same name as the source file.
+    
+    Fixes https://github.com/angular/ngcc-validation/pull/608
+    
+    PR Close #34254
+
+commit f22a6eb00ea91037656753971ddaa9ad8554d3ec
+Author: Pete Bacon Darwin <pete@bacondarwin.com>
+Date:   Wed Dec 18 14:03:05 2019 +0000
+
+    fix(ngcc): correctly match aliased classes between src and dts files (#34254)
+    
+    The naïve matching algorithm we previously used to match declarations in
+    source files to declarations in typings files was based only on the name
+    of the thing being declared.  This did not handle cases where the declared
+    item had been exported via an alias - a common scenario when one of the two
+    file sets (source or typings) has been flattened, while the other has not.
+    
+    The new algorithm tries to overcome this by creating two maps of export
+    name to declaration (i.e. `Map<string, ts.Declaration>`).
+    One for the source files and one for the typings files.
+    It then joins these two together by matching export names, resulting in a
+    new map that maps source declarations to typings declarations directly
+    (i.e. `Map<ts.Declaration, ts.Declaration>`).
+    
+    This new map can handle the declaration names being different between the
+    source and typings as long as they are ultimately both exported with the
+    same alias name.
+    
+    Further more, there is one map for "public exports", i.e. exported via the
+    root of the source tree (the entry-point), and another map for "private
+    exports", which are exported from individual files in the source tree but
+    not necessarily from the root. This second map can be used to "guess"
+    the mapping between exports in a deep (non-flat) file tree, which can be
+    used by ngcc to add required private exports to the entry-point.
+    
+    Fixes #33593
+    
+    PR Close #34254
+
+commit e9fb5fdb894b30c78e6f23f51f3a634ce325a7d0
+Author: Pete Bacon Darwin <pete@bacondarwin.com>
+Date:   Wed Dec 18 14:03:05 2019 +0000
+
+    fix(ngcc): handle UMD re-exports (#34254)
+    
+    In TS we can re-export imports using statements of the form:
+    
+    ```
+    export * from 'some-import';
+    ```
+    
+    This is downleveled in UMD to:
+    
+    ```
+    function factory(exports, someImport) {
+      function __export(m) {
+        for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
+      }
+      __export(someImport);
+    }
+    ```
+    
+    This commit adds support for this.
+    
+    PR Close #34254
+
+commit 47666f548c8a475a79d95ffb5f4264f4bb76233f
+Author: Pete Bacon Darwin <pete@bacondarwin.com>
+Date:   Wed Dec 18 14:03:04 2019 +0000
+
+    fix(ngcc): handle CommonJS re-exports by reference (#34254)
+    
+    In TS we can re-export imports using statements of the form:
+    
+    ```
+    export * from 'some-import';
+    ```
+    
+    This can be downleveled in CommonJS to either:
+    
+    ```
+    __export(require('some-import'));
+    ```
+    
+    or
+    
+    ```
+    var someImport = require('some-import');
+    __export(someImport);
+    ```
+    
+    Previously we only supported the first downleveled version.
+    This commit adds support for the second version.
+    
+    PR Close #34254
+
+commit 0b837e2f0d4ac178b0ddd8f50c46c1dc97e9b12c
+Author: Pete Bacon Darwin <pete@bacondarwin.com>
+Date:   Wed Dec 18 14:03:04 2019 +0000
+
+    refactor(ngcc): use bundle src to create reflection hosts (#34254)
+    
+    Previously individual properties of the src bundle program were
+    passed to the reflection host constructors. But going forward,
+    more properties will be required. To prevent the signature getting
+    continually larger and more unwieldy, this change just passes the
+    whole src bundle to the constructor, allowing it to extract what it
+    needs.
+    
+    PR Close #34254
+
+commit dfecca29dab86c62d4c3a45036d2358194d0320f
+Author: Martin Probst <martin@probst.io>
+Date:   Mon Dec 9 14:25:15 2019 +0100
+
+    refactor: TypeScript 3.7 fixes. (#34372)
+    
+    This PR fixes more TypeScript 3.7 compilation issues.
+    
+    PR Close #34372
+
+commit 1eae7c81e979dfb8b503ea1d7c42025c1d4d7af7
+Author: Keen Yee Liau <kyliau@google.com>
+Date:   Tue Dec 17 16:57:17 2019 -0800
+
+    refactor(language-service): Append missing AttrAst to AstPath (#34459)
+    
+    When a HTML Ast containing an Attribute node is converted to a Template Ast,
+    the attribute node might get dropped from the Template Ast path.
+    This is because the AttrNode is not even in the Template Ast to begin with.
+    In this case, we manually fix the path by converting the Attribute node
+    to a AttrAst node and appending it to the path.
+    
+    This allows the `ExpressionVisitor` to properly visit the leaf node in the
+    TemplateAst path. We no longer need to visit the `Element` and look for
+    attributes.
+    
+    PR Close #34459
+
+commit a04f7c0d5ff5a820b40bc448c8fea558cf9b0b74
+Author: Keen Yee Liau <kyliau@umich.edu>
+Date:   Thu Dec 12 15:46:27 2019 -0800
+
+    fix(language-service): Proper completions for properties and events (#34445)
+    
+    This commit fixes autocompletions for properties and events bindings.
+    
+    The language service will no longer provide bindings like (click) or [id].
+    Instead, it'll infer the context based on the brackets and provide suggestions
+    without any brackets.
+    
+    This fix also adds support for alternative binding syntax such as
+    `bind-`, `on-`, and `bindon`.
+    
+    PR closes https://github.com/angular/vscode-ng-language-service/issues/398
+    PR closes https://github.com/angular/vscode-ng-language-service/issues/474
+    
+    PR Close #34445
+
+commit 9d1175e2b2b8bc8b282b15f56daac01e0537a5bf
+Author: Andrew Kushnir <akushnir@google.com>
+Date:   Tue Dec 10 16:23:56 2019 -0800
+
+    fix(ivy): improve ExpressionChangedAfterChecked error (#34381)
+    
+    Prior to this change, the ExpressionChangedAfterChecked error thrown in Ivy was missing useful information that was available in View Engine, specifically: missing property name for proprty bindings and also the content of the entire property interpolation (only a changed value was displayed) if one of expressions was changed unexpectedly. This commit improves the error message by including the mentioned information into the error text.
+    
+    PR Close #34381
+
+commit 3e201181bb9bc8da15b2a808a34c742458149851
+Author: Ayaz Hafiz <ayaz.hafiz.1@gmail.com>
+Date:   Wed Jul 31 14:47:25 2019 -0700
+
+    fix(ivy): correctly associate output bound events with directives (#31938)
+    
+    Previously, bound events were incorrectly bound to directives with
+    inputs matching the bound event attribute. This fixes that so bound
+    events can only be bound to directives with matching outputs.
+    
+    Adds tests for all kinds of directive matching on bound attributes.
+    
+    PR Close #31938
+
+commit 7938ff34b171e4bbf362f39d9e6e2c8e1abf6486
+Author: George Kalpakas <kalpakas.g@gmail.com>
+Date:   Thu Dec 5 21:02:57 2019 +0200
+
+    refactor(compiler-cli): avoid unnecessarily calling `getSourceFile()` twice in `PartialEvaluator` (#34441)
+    
+    This is not expected to have any noticeable perf impact, but it wasteful
+    nonetheless (and annoying when stepping through the code while debugging
+    `ngtsc`/`ngcc`).
+    
+    PR Close #34441
+
+commit b637b9322e9ff9a747a914c4f949f04af7d8bc0f
+Author: George Kalpakas <kalpakas.g@gmail.com>
+Date:   Tue Dec 17 19:05:22 2019 +0200
+
+    ci(docs-infra): fix failure in `aio_monitoring_stable` due to yarn version mismatch (#34451)
+    
+    The `aio_monitoring_stable` CI job is triggered as a cronjob on the
+    master branch and its purpose is to run some e2e tests against the
+    deployed stable version of the docs web-app at https://angular.io/. In
+    order for the tests to be compatible with the deployed version of the
+    web-app (which gets deployed from the stable branch), the stable branch
+    is checked out in git as part of the CI job.
+    
+    Previously, we only checked out the `aio/` directory from the stable
+    branch, leaving the rest of the code at master. This doesn't matter as
+    long as the commands used to run the tests do not rely on code outside
+    of `aio/`. However, it turns out that there _is_ code outside of `aio/`
+    that affects the executed commands: It is our vendored version of yarn
+    (in `third_party/github.com/yarnpkg/`), which overwrites the global yarn
+    installed on the docker image on CI and must match the version range
+    specified in `aio/package.json > engines`.
+    
+    Using the yarn version checked out from the master branch with the
+    `aio/` code checked out from the stable branch can lead to failures
+    such as [this one][1].
+    
+    This commit fixes the problem by checking out both the `aio/` and
+    `third_party/github.com/yarnpkg/` directories from the stable branch and
+    re-running the steps to overwrite the global yarn executable with our
+    own version from `third_party/github.com/yarnpkg/`. This ensures that
+    the version of yarn used will be compatible with the version range
+    specified in `aio/package.json > engines`.
+    
+    NOTE:
+    We cannot checkout everything from the stable branch, since the CI
+    config (`.circleci/config.yml` from the master branch) may try to run
+    certain scripts (such as `.circleci/get-vendored-yarn-path.js`) that are
+    not available on the stable branch. Therefore, we should only check out
+    the necessary bits from the stable branch.
+    
+    [1]: https://circleci.com/gh/angular/angular/567315
+    
+    PR Close #34451
+
+commit 6bfe214346b5b7c0e7ede3848c2975a707fbf9ab
+Author: ajitsinghkaler <ajitsinghkaler0@gmail.com>
+Date:   Fri Dec 13 03:39:20 2019 +0530
+
+    docs: add products.ts file on getting started page (#34301)
+    
+    in the getting started page (first tutorial) file products.ts which was not shown and was only present in the StackBlitz examples. So added a refrence that it is present in the example and also added a note that examples may carry filenames not present please look at StackBliz examples for details
+    
+    Fixes #34291
+    
+    PR Close #34301
+
+commit 9ba8059e88d0494a4a4dcb00a848d6f776184329
+Author: Paul Gschwendtner <paulgschwendtner@gmail.com>
+Date:   Mon Dec 16 20:14:35 2019 +0100
+
+    ci: update material-unit-tests job to include commit that reduced test flakiness (#34430)
+    
+    Updates the material-unit-tests job commit SHA to the most recent
+    commit at the time of writing. The goal is to run the unit tests
+    with https://github.com/angular/components/commit/6ae74a0eb21268d4b107a052a8cf8ae63078bf99
+    that improved stability of a few menu tests that were flaky.
+    
+    e.g. https://circleci.com/gh/angular/angular/564650
+    
+    PR Close #34430
+
+commit 763f8d470acf0bd75d692dad2b095455ab603e5d
+Author: Alex Rickabaugh <alx+alxhub@alxandria.net>
+Date:   Fri Dec 13 14:29:05 2019 -0800
+
+    fix(ivy): validate the NgModule declarations field (#34404)
+    
+    This commit adds three previously missing validations to
+    NgModule.declarations:
+    
+    1. It checks that declared classes are actually within the current
+       compilation.
+    
+    2. It checks that declared classes are directives, components, or pipes.
+    
+    3. It checks that classes are declared in at most one NgModule.
+    
+    PR Close #34404
+
+commit 9cabd6638e8573ab785fc59cee36111848ea367f
+Author: George Kalpakas <kalpakas.g@gmail.com>
+Date:   Thu Dec 5 21:02:57 2019 +0200
+
+    refactor(ngcc): un-nest accidentally nested `describe()` blocks (#34437)
+    
+    PR Close #34437
+
+commit cd8a837956a2e5ad76c4ff86453c88b29dd696fa
+Author: George Kalpakas <kalpakas.g@gmail.com>
+Date:   Thu Dec 5 21:02:57 2019 +0200
+
+    refactor(ngcc): add debug messages to help with debugging in parallel mode (#34437)
+    
+    PR Close #34437
+
+commit 5cecd97493025cd940c9ade4ea9f1836d5b05cc8
+Author: Paul Gschwendtner <paulgschwendtner@gmail.com>
+Date:   Mon Dec 16 21:47:37 2019 +0100
+
+    feat(forms): expand NgModel disabled type to work with strict template type checking (#34438)
+    
+    NgModel internally coerces any arbitrary value that will assigned
+    to the `disabled` `@Input` to a boolean. This has been done to
+    support the common case where developers set the disabled attribute
+    without a value. For example:
+    
+    ```html
+    <input type="checkbox" [(ngModel)]="value" disabled>
+    ```
+    
+    This worked in View Engine without any errors because inputs were
+    not strictly checked. In Ivy though, developers can opt-in into
+    strict template type checking where the attribute would be flagged.
+    
+    This is because the `NgModel#isDisabled` property type-wise only
+    accepts a `boolean`. To ensure that the common pattern described
+    above can still be used, and to reflect the actual runtime behavior,
+    we should add an acceptance member that makes it work without type
+    checking errors.
+    
+    Using a coercion member means that this is not a breaking change.
+    
+    PR Close #34438
+
+commit 5df8a3ba954e7908a1a34b9383c776329fe75924
+Author: Keen Yee Liau <kyliau@google.com>
+Date:   Mon Dec 16 12:11:39 2019 -0800
+
+    fix(language-service): HTML path should include last node before cursor (#34440)
+    
+    Given the following HTML and cursor position:
+    ```
+    <div c|></div>
+          ^ cursor is here
+    ```
+    
+    Note that the cursor is **after** the attribute `c`.
+    
+    Under the current implementation, only `Element` is included in the
+    path. Instead, it should be `Element -> Attribute`.
+    
+    This bug occurs only for cases where the cursor is right after the Node,
+    and it is because the `end` position of the span is excluded from the search.
+    Instead, the `end` position should be included.
+    
+    PR Close #34440
+
+commit 28b4f4abce62a755ffb0bacdd710f8de1e9dfc7b
+Author: George Kalpakas <kalpakas.g@gmail.com>
+Date:   Sun Dec 15 13:02:38 2019 +0200
+
+    build: remove unused `polyfills-runtime.ts` file (#34424)
+    
+    The `polyfills-runtime.ts` file is used in the [integration/ivy-i18n][1]
+    project, which has an appropriate [configuration][2]. The file was
+    accidentally included in the `cli-hello-world-ivy-i18n` integration
+    project was introduced in 4857c53a4, although it is not used there.
+    
+    This commit removes th `polyfills-runtime.ts` file from the
+    `cli-hello-world-ivy-i18n` integration project.
+    
+    [1]: https://github.com/angular/angular/blob/f79110c63/integration/ivy-i18n/src/polyfills-runtime.ts
+    [2]: https://github.com/angular/angular/blob/f79110c63/integration/ivy-i18n/angular.json#L65-L72
+    
+    PR Close #34424
+
+commit 5eaab85fc064e69a94d104796123ea38619587ef
+Author: Keen Yee Liau <kyliau@google.com>
+Date:   Mon Dec 16 11:03:39 2019 -0800
+
+    fix(language-service): Remove completions for let and of in ngFor (#34434)
+    
+    `let` and `of` should be considered reserved keywords in template syntax
+    and thus should not be part of the autocomplete suggestions.
+    
+    For reference, TypeScript does not provide such completions.
+    
+    This commit removes these results and cleans up the code.
+    
+    PR Close #34434
+
+commit 357a0733c74634615917f6fd89fa13f6609c1062
+Author: Andrew Scott <atscott01@gmail.com>
+Date:   Mon Dec 16 10:03:09 2019 -0800
+
+    fix(ivy): reorder provider type checks to align with VE (#34433)
+    
+    The ordering matters because we don't currently throw if multiple
+    configurations are provided (i.e. provider has *both* useExisting and
+    useFactory). We should actually throw an error in this case, but to
+    avoid another breaking change in v9, this PR simply aligns the Ivy
+    behavior with ViewEngine.
+    
+    PR Close #34433
+
+commit 835ed0f35fa187f4051129ab30b7b635f15aeb57
+Author: crisbeto <crisbeto@abv.bg>
+Date:   Sat Dec 14 17:29:35 2019 +0100
+
+    fix(animations): leaking detached nodes when parent has a leave transition (#34409)
+    
+    In the TransitionAnimationEngine we keep track of the existing elements with animations and we clear the cached data when they're removed. We also have some logic where we transition away the child elements when a parent is removed, however in that case we never cleared the cached element data which resulted in a memory leak. The leak is particularly visible in Material where whenever there's an animated overlay with a component inside of it that has an animation, the child component would always be retained in memory.
+    
+    Fixes #25744.
+    
+    PR Close #34409
+
+commit 1144ce97f91d6a96f4547fde443e9b06f2f351d0
+Author: Michael Nahkies <michael@nahkies.co.nz>
+Date:   Mon Dec 16 10:17:47 2019 +0000
+
+    fix(common): ngStyle should ignore undefined values (#34422)
+    
+    Prior to ivy, undefined values passed in an object to the
+    ngStyle directive were ignored. Restore this behavior by
+    ignoring keys that point to undefined values.
+    
+    closes #34310
+    
+    PR Close #34422
+
+commit 23cf11a788397f6f812c637e548a3d2023384e27
+Author: Sonu Kapoor <sonukapoor@gmail.com>
+Date:   Mon Dec 16 13:04:18 2019 -0500
+
+    ci: fix remote name in rebase instructions (#34432)
+    
+    Previously, the rebase instructions were asking the user to rebase from
+    `origin/master` instead of `upstream/master`.
+    
+    PR Close #34432
+
+commit d0a04bf30980a60629c22b332de29040cea8e703
+Author: Paul Gschwendtner <paulgschwendtner@gmail.com>
+Date:   Mon Dec 16 16:50:20 2019 +0100
+
+    ci: fix saucelabs_view_engine master-only failing (#34429)
+    
+    Currently the `saucelabs_view_engine` job fails because
+    the Saucelabs Bazel run script thinks that `--config=saucelabs`
+    is a flag targeting the actual script. This is not the case and
+    the flag should be actually part of the bazel command.
+    
+    PR Close #34429
+
+commit ddc229b69bbf26c7f0746aba270f200d451e077c
+Author: Ayaz Hafiz <ayaz.hafiz.1@gmail.com>
+Date:   Tue Jul 23 15:51:42 2019 -0700
+
+    fix(ivy): record correct absolute source span for ngForOf expressions (#31813)
+    
+    Expressions in an inline template binding are improperly recorded as
+    spaning an offset calculated from the start of the template binding
+    attribute key, whereas they should be calculated from the start of the
+    attribute value, which contains the actual binding AST.
+    
+    PR Close #31813
+
+commit 12444a8afcbd14ce2a37d64efd3f42b11245d997
+Author: JoostK <joost.koehoorn@gmail.com>
+Date:   Sat Dec 14 22:35:00 2019 +0100
+
+    test(ngcc): cleanup entry-point bundle testcases (#34415)
+    
+    There was an issue with the program under test and two tests with the
+    same description, this has been fixed.
+    
+    PR Close #34415
+
+commit a186dbc1d42ea7d492dcc4a587684926112832a8
+Author: ajitsinghkaler <ajitsinghkaler0@gmail.com>
+Date:   Sun Dec 15 11:36:12 2019 +0530
+
+    docs(upgrade): add example links to `downgradeComponent()` function docs (#34406)
+    
+    There were some extra examples for `downgradeComponent()` in the upgrade
+    guide. Added a link to the relevant section of the guide in the
+    `downgradeComponent()` docs.
+    
+    Fixes #31584
+    
+    PR Close #34406
+
+commit 04ab03664db817f879bcb2c674d9268bf2d38cfa
+Author: Paul Gschwendtner <paulgschwendtner@gmail.com>
+Date:   Thu Dec 12 10:39:10 2019 +0100
+
+    ci: ensure saucelabs test output is human readable (#34277)
+    
+    Currently the Saucelabs test output (also an issue in the POC bazel
+    saucelabs master-only cronjob), is very verbose because two Karma
+    reporters conflict. Basically resulting in the progress messages
+    being printed in new lines (while they usually are just updated
+    using a tty cursor reset).
+    
+    PR Close #34277
+
+commit 6d3a25d8977e272822a1955fec37fb6c483ed395
+Author: Paul Gschwendtner <paulgschwendtner@gmail.com>
+Date:   Fri Dec 6 16:17:09 2019 +0100
+
+    ci: run acceptance tests on saucelabs with ivy (#34277)
+    
+    Currently we only run Saucelabs on PRs using the legacy View Engine
+    build. Switching that build to Ivy is not trivial and there are various
+    options:
+    
+      1. Updating the R3 switches to use POST_R3 by default. At first glance,
+      this doesn't look easy because the current ngtsc switch logic seems to
+      be unidirectional (only PRE_R3 to POST_R3).
+    
+      2. Updating the legacy setup to run with Ivy. This sounds like the easiest
+      solution at first.. but it turns out to be way more complicated. Packages
+      would need to be built with ngtsc using legacy tools (i.e. first building
+      the compiler-cli; and then building packages) and View Engine only tests
+      would need to be determined and filtered out. Basically it will result in
+      re-auditing all test targets. This is contradictory to the fact that we have
+      this information in Bazel already.
+    
+      3. Creating a new job that runs tests on Saucelabs with Bazel. We specify
+      fine-grained test targets that should run. This would be a good start
+      (e.g. acceptance tests) and also would mean that we do not continue maintaining
+      the legacy setup..
+    
+    This commit implements the third option as it allows us to move forward
+    with the general Bazel migration. We don't want to spend too much time
+    on our legacy setup since it will be removed anyway in the future.
+    
+    PR Close #34277
+
+commit 3bbd12d56090e37b1deea0f051564521a98d811e
+Author: Igor Minar <igor@angular.io>
+Date:   Thu Dec 12 22:26:42 2019 +0100
+
+    build: update to yarn@1.21.1 (#34384)
+    
+    This updates yarn throughout the monorepo for both build and CI.
+    
+    PR Close #34384
+
+commit c049cf22067d6b49cb923761d19a4b4ec6528736
+Author: George Kalpakas <kalpakas.g@gmail.com>
+Date:   Sat Dec 14 16:38:03 2019 +0200
+
+    ci: use local, vendored yarn in Windows CI jobs (#34384)
+    
+    We keep a version of yarn in the repo, at
+    `third_party/github.com/yarnpkg/`. All CI jobs should use that version
+    for consistency (and easier updates).
+    
+    Previously, the Windows jobs did not use the local version. They used
+    the version that came pre-installed on the docker image that we used.
+    This made it more difficult to update the yarn version (something that
+    we might want to do independently of updating other dependencies, such
+    as Node.js).
+    
+    This commit fixes this by setting up the Windows CI jobs to also use the
+    local, vendored version of yarn.
+    
+    PR Close #34384
+
+commit 3ceb2b85dade06ed67480cb42f9bd773d6c65914
+Author: George Kalpakas <kalpakas.g@gmail.com>
+Date:   Sat Dec 14 16:26:33 2019 +0200
+
+    ci: avoid hard-coding path to local yarn executable (#34384)
+    
+    We keep a version of yarn in the repo, at
+    `third_party/github.com/yarnpkg/`. All CI jobs (including Windows ones)
+    should use that version for consistency (and easier updates). The path
+    to the actual `yarn.js` script, however, changes depending on the
+    version (e.g. `third_party/github.com/yarnpkg/v1.21.1/...`).
+    (NOTE: The Windows jobs are currently not using this local version, but
+    that should be fixed in a subsequent commit.)
+    
+    Previously, when updating the local version of yarn, we would
+    potentially have to update the path in several places.
+    
+    This commit addresses the problem by adding a Node.js script that infers
+    the correct path. The script can be used in all places where we need to
+    use the local version of yarn (including both Linux and Windows CI
+    jobs), thus eliminating the need to update the path in several places.
+    
+    PR Close #34384
+
+commit fac997c53ba59efd3e6739e9c56b1951ad35ff48
+Author: George Kalpakas <kalpakas.g@gmail.com>
+Date:   Sat Dec 14 16:34:48 2019 +0200
+
+    ci: remove unused variable from `.circleci/env.sh` (#34384)
+    
+    Since #32537, the `.circleci/get-commit-range.js` script is no longer
+    used in `.circleci/env.sh`. This commit removes the now unused local
+    variable to the script's path.
+    
+    PR Close #34384
+
+commit f79110c6375d39b148339b7b4af38d99a9c039d9
+Author: crisbeto <crisbeto@abv.bg>
+Date:   Wed Dec 11 22:20:28 2019 +0100
+
+    fix(ivy): incorrect injectable name logged in warning message on IE (#34305)
+    
+    When we log DI errors we get the name of the provider via `SomeClass.name`. In IE functions that inherit from other functions don't have their own `name`, but they take the `name` from the lowest parent in the chain, before `Function`. I've added some changes to fall back to parsing out the function name from the function's string form.
+    
+    PR Close #34305
+
+commit c2a904da09165609cf408ceee26611f3a8df5326
+Author: crisbeto <crisbeto@abv.bg>
+Date:   Wed Dec 11 22:18:38 2019 +0100
+
+    fix(ivy): inheriting injectable definition from undecorated class not working on IE10 in JIT mode (#34305)
+    
+    The way definitions are added in JIT mode is through `Object.defineProperty`, but the problem is that in IE10 properties defined through `defineProperty` won't be inherited which means that inheriting injectable definitions no longer works. These changes add a workaround only for JIT mode where we define a fallback method for retrieving the definition. This isn't ideal, but it should only be required until v10 where we'll no longer support inheriting injectable definitions from undecorated classes.
+    
+    PR Close #34305
+
+commit ded78e5688941b6dd1059aed043006cf6384a7d3
+Author: crisbeto <crisbeto@abv.bg>
+Date:   Wed Dec 11 22:08:56 2019 +0100
+
+    fix(ivy): inheritance in JIT mode not working correctly on IE10 (#34305)
+    
+    Fixes the metadata and lifecycle hook inheritance not working properly in IE10, because we weren't accessing things correctly.
+    
+    PR Close #34305
+
+commit 1efa0ca4d0422f77faa1b8972b28c3b4fb8bab73
+Author: crisbeto <crisbeto@abv.bg>
+Date:   Wed Dec 11 22:06:32 2019 +0100
+
+    fix(ivy): avoid using __proto__ when reading metadata in JIT mode (#34305)
+    
+    In JIT mode we use `__proto__` when reading constructor parameter metadata, however it's not supported on IE10. These changes switch to using `Object.getPrototypeOf` instead.
+    
+    PR Close #34305
+
+commit 758f7a7d8ece9d24b84332f43088388c1c3752f3
+Author: crisbeto <crisbeto@abv.bg>
+Date:   Wed Dec 11 22:04:31 2019 +0100
+
+    test(ivy): account for inconsistent attribute order (#34305)
+    
+    We've got some tests that assert that the generate DOM looks correct. The problem is that IE changes the attribute order in `innerHTML` which caused the tests to fail. I've reworked the relevant tests not to assert directly against `innerHTML`.
+    
+    PR Close #34305
+
+commit 8eb05964639ea66e602f3c145728cb63ced706cd
+Author: crisbeto <crisbeto@abv.bg>
+Date:   Wed Dec 11 22:03:00 2019 +0100
+
+    fix(ivy): unknown property and element checks not working correctly in IE (#34305)
+    
+    We have a couple of cases where we use something like `typeof Node === 'function'` to figure out whether we're in a worker context. This works in most browsers, but IE returns `object` instead of `function`. I've updated all the usages to account for it.
+    
+    PR Close #34305
+
+commit c45a70c3b8682268159f9702e75b2a1a6b54da3e
+Author: crisbeto <crisbeto@abv.bg>
+Date:   Wed Dec 11 22:01:40 2019 +0100
+
+    fix(ivy): inconsistent attribute casing in DebugNode.attributes on IE (#34305)
+    
+    In `DebugElement.attributes` we return all of the attributes from the underlying DOM node. Most browsers change the attribute names to lower case, but IE preserves the case and since we use camel-cased attributes, the return value was inconsitent. I've changed it to always lower case the attribute names.
+    
+    PR Close #34305
+
+commit 0100a39e21979a887320d7372eee5a5a718cf2ed
+Author: crisbeto <crisbeto@abv.bg>
+Date:   Wed Dec 11 22:00:42 2019 +0100
+
+    fix(ivy): i18n instructions thrown off by sanitizer in IE11 (#34305)
+    
+    While sanitizing on browsers that don't support the `template` element (pretty much only IE), we create an inert document and we insert content into it via `document.body.innerHTML = unsafeHTML`. The problem is that IE appears to parse the HTML passed to `innerHTML` differently, depending on whether the element has been inserted into a document or not. In particular, it seems to split some strings into multiple text nodes, which would've otherwise been a single node. This ended up throwing off some of the i18n code down the line and causing a handful of failures. I've worked around it by creating a new inert `body` element into which the HTML would be inserted.
+    
+    PR Close #34305
+
+commit 17f7f06ca5daf4d7cded40bef26d645a64f0bd79
+Author: Kara Erickson <karakara@google.com>
+Date:   Fri Dec 13 13:06:47 2019 -0800
+
+    Revert "build: update to yarn@1.21.1" (#34402)
+    
+    This reverts commit f029af50820765019413fa319330830306b80d6a while we investigate
+    some failures on master on Circle CI. Currently the Windows tests and the
+    "test-ivy-aot" jobs are red because of incompatible yarn versions.
+    
+    PR Close #34402
+
+commit ea57587b7c5e9de6d790af58014b58e063176299
+Author: Pawel Kozlowski <pkozlowski.opensource@gmail.com>
+Date:   Thu Dec 12 14:27:02 2019 +0100
+
+    docs(ivy): document breaking changes for DebugElement classes and attributes (#34328)
+    
+    PR Close #34328
+
+commit a7818002769191f0a4a241e530619735bd673262
+Author: Pawel Kozlowski <pkozlowski.opensource@gmail.com>
+Date:   Tue Dec 10 15:55:53 2019 +0100
+
+    refactor(ivy): remove usage of Proxy for IE10/11 compatibility (#34328)
+    
+    PR Close #34328
+
+commit b405942b0c44c999ea4006129ac38d387637da27
+Author: Igor Minar <igor@angular.io>
+Date:   Thu Dec 12 22:26:42 2019 +0100
+
+    build: update to yarn@1.21.1 (#34384)
+    
+    This updates yarn throughout the monorepo for both build and CI.
+    
+    PR Close #34384
+
+commit 0fba79cda268bfa21ca52c393d53b9606564d952
+Author: Pawel Kozlowski <pkozlowski.opensource@gmail.com>
+Date:   Thu Dec 12 15:12:49 2019 +0100
+
+    refactor(ivy): don't include removed classes in the styling debug (#34375)
+    
+    This is mostly done to allign behaviour with DebugElement.classes and remove
+    Proxy usage (not supported in IE10/11).
+    
+    PR Close #34375
+
+commit a9e3cbd5342f7113661d0b0bbc1ca880c34493dc
+Author: Kapunahele Wong <kapunahelewong@gmail.com>
+Date:   Tue Nov 26 17:21:49 2019 -0500
+
+    docs: add docs about inputs and strictNullChecks to template typecheck (#34194)
+    
+    PR Close #34194
+
+commit af95dddd7ea4d90cb1354412174beb502274bbd3
+Author: Alex Rickabaugh <alx+alxhub@alxandria.net>
+Date:   Tue Dec 10 11:39:45 2019 -0800
+
+    perf(ivy): eagerly parse the template twice during analysis (#34334)
+    
+    A quirk of the Angular template parser is that when parsing templates in the
+    "default" mode, with options specified by the user, the source mapping
+    information in the template AST may be inaccurate. As a result, the compiler
+    parses the template twice: once for "emit" and once to produce an AST with
+    accurate sourcemaps for diagnostic production.
+    
+    Previously, only the first parse was performed during analysis. The second
+    parse occurred during the template type-checking phase, just in time to
+    produce the template type-checking file.
+    
+    However, with the reuse of analysis results during incremental builds, it
+    makes more sense to do the diagnostic parse eagerly during analysis so that
+    the work isn't unnecessarily repeated in subsequent builds. This commit
+    refactors the `ComponentDecoratorHandler` to do both parses eagerly, which
+    actually cleans up some complexity around template parsing as well.
+    
+    PR Close #34334
+
+commit ff0a91422a2fed4764e3f96eabf7be0ef049a88b
+Author: JoostK <joost.koehoorn@gmail.com>
+Date:   Sun Dec 8 20:37:45 2019 +0100
+
+    perf(compiler): speed up i18n digest computations (#34332)
+    
+    Avoids the usage of array destructuring, as it introduces calls to
+    a `__values` helper function in ES5 that has a relatively high
+    performance impact. This shaves off roughly 130ms of CPU time for a
+    large compilation with big templates that uses i18n.
+    
+    PR Close #34332
+
+commit 014a7137f474ee97ae95f35de85ab0e948a1a89b
+Author: JoostK <joost.koehoorn@gmail.com>
+Date:   Sun Dec 8 15:21:38 2019 +0100
+
+    perf(compiler): use a shared interpolation regex (#34332)
+    
+    The template parser has a certain interpolation config associated with
+    it and builds a regular expression each time it needs to extract the
+    interpolations from an input string. Since the interpolation config is
+    typically the default of `{{` and `}}`, the regular expression doesn't
+    have to be recreated each time. Therefore, this commit creates only a
+    single regular expression instance that is used for the default
+    configuration.
+    
+    In a large compilation unit with big templates, computing the regular
+    expression took circa 275ms. This change reduces this to effectively
+    zero.
+    
+    PR Close #34332
+
+commit 4945274080276521ca6ccd93957a5dee1c395f90
+Author: JoostK <joost.koehoorn@gmail.com>
+Date:   Sun Dec 8 14:57:07 2019 +0100
+
+    perf(compiler): optimize cloning cursors state (#34332)
+    
+    On a large compilation unit with big templates, the total time spent in
+    the `PlainCharacterCursor` constructor was 470ms. This commit applies
+    two optimizations to reduce this time:
+    
+    1. Avoid the object spread operator within the constructor, as the
+    generated `__assign` helper in the emitted UMD bundle (ES5) does not
+    optimize well compared to a hardcoded object literal. This results in a
+    significant performance improvement. Because of the straight-forward
+    object literal, the VM is now much better able to optimize the memory
+    allocations which makes a significant difference as the
+    `PlainCharacterCursor` constructor is called in tight loops.
+    
+    2. Reduce the number of `CharacterCursor` clones. Although cloning
+    itself is now much faster because of the optimization above, several
+    clone operations were not necessary.
+    
+    Combined, these changes reduce the total time spent in the
+    `PlainCharacterCursor` constructor to just 10ms.
+    
+    PR Close #34332
+
+commit 8c2cbdd385543269cdf4c802fb10bee7624eafe4
+Author: JoostK <joost.koehoorn@gmail.com>
+Date:   Sat Dec 7 22:38:36 2019 +0100
+
+    perf(ivy): use module resolution cache (#34332)
+    
+    During TypeScript module resolution, a lot of filesystem requests are
+    done. This is quite an expensive operation, so a module resolution cache
+    can be used to speed up the process significantly.
+    
+    This commit lets the Ivy compiler perform all module resolution with a
+    module resolution cache. Note that the module resolution behavior can be
+    changed with a custom compiler host, in which case that custom host
+    implementation is responsible for caching. In the case of the Angular
+    CLI a custom compiler host with proper module resolution caching is
+    already in place, so the CLI already has this optimization.
+    
+    PR Close #34332
+
+commit 2f5ddd9c96f7ea4ab0c1dd7fa67d62baa6bb0bbe
+Author: JoostK <joost.koehoorn@gmail.com>
+Date:   Sat Dec 7 22:36:58 2019 +0100
+
+    perf(ivy): cache export scopes extracted from declaration files (#34332)
+    
+    The export scope of NgModules from external compilations units, as
+    present in .d.ts declarations, does not change during a compilation so
+    can be easily shared. There was already a cache but the computed export
+    scope was not actually stored there. This commit fixes that.
+    
+    PR Close #34332
+
+commit 6e5f0763300b47e5c97870d12ced614aa2bd9740
+Author: JoostK <joost.koehoorn@gmail.com>
+Date:   Sat Dec 7 22:36:06 2019 +0100
+
+    perf(ivy): share instances of `DomElementSchemaRegistry` (#34332)
+    
+    To create a binding parser, an instance of `ElementSchemaRegistry` is
+    required. Prior to this change, each time a new binding parser was
+    created a new instance of `DomElementSchemaRegistry` would be
+    instantiated. This is an expensive operation that takes roughly 1ms per
+    instantiation, so it is key that multiple allocations are avoided.
+    
+    By sharing a single `DomElementSchemaRegistry`, we avoid two such
+    allocations, i.e. save ~2ms, per component template.
+    
+    PR Close #34332
+
+commit 3255d2b19755bc8f3ab30b51c756763baa5e2e5b
+Author: Adam Plumer <caerus.karu@gmail.com>
+Date:   Thu Dec 12 00:06:34 2019 -0600
+
+    test(core): fix schematics calls to run synchronously (#34364)
+    
+    Previously the calls to run the schematics were not being properly
+    or consistently awaited in the tests. While this currently does not
+    affect the tests' performance, this fix corrects the syntax and
+    adds stability for future changes.
+    
+    PR Close #34364
+
+commit 6e7ca05efce31e6e08c9870e6130688da3238777
+Author: Igor Minar <igor@angular.io>
+Date:   Thu Dec 12 09:53:13 2019 +0100
+
+    build: remove unused webpack npm dependency (#34366)
+    
+    We no longer need it.
+    
+    PR Close #34366
+
+commit 6ba5fdc2082cc668f53f82afc36776f2cb24dcd6
+Author: Alex Rickabaugh <alx+alxhub@alxandria.net>
+Date:   Tue Dec 10 17:34:11 2019 -0800
+
+    fix(ivy): generate a better error for template var writes (#34339)
+    
+    In Ivy it's illegal for a template to write to a template variable. So the
+    template:
+    
+    ```html
+    <ng-template let-somevar>
+      <button (click)="somevar = 3">Set var to 3</button>
+    </ng-template>
+    ```
+    
+    is erroneous and previously would fail to compile with an assertion error
+    from the `TemplateDefinitionBuilder`. This error wasn't particularly user-
+    friendly, though, as it lacked the context of which template or where the
+    error occurred.
+    
+    In this commit, a new check in template type-checking is added which detects
+    such erroneous writes and produces a true diagnostic with the appropriate
+    context information.
+    
+    Closes #33674
+    
+    PR Close #34339
+
+commit 74edde0a944f9f82485ca662dd22a9fefcabb1fb
+Author: Alex Rickabaugh <alx+alxhub@alxandria.net>
+Date:   Thu Dec 5 16:03:17 2019 -0800
+
+    perf(ivy): reuse prior analysis work during incremental builds (#34288)
+    
+    Previously, the compiler performed an incremental build by analyzing and
+    resolving all classes in the program (even unchanged ones) and then using
+    the dependency graph information to determine which .js files were stale and
+    needed to be re-emitted. This algorithm produced "correct" rebuilds, but the
+    cost of re-analyzing the entire program turned out to be higher than
+    anticipated, especially for component-heavy compilations.
+    
+    To achieve performant rebuilds, it is necessary to reuse previous analysis
+    results if possible. Doing this safely requires knowing when prior work is
+    viable and when it is stale and needs to be re-done.
+    
+    The new algorithm implemented by this commit is such:
+    
+    1) Each incremental build starts with knowledge of the last known good
+       dependency graph and analysis results from the last successful build,
+       plus of course information about the set of files changed.
+    
+    2) The previous dependency graph's information is used to determine the
+       set of source files which have "logically" changed. A source file is
+       considered logically changed if it or any of its dependencies have
+       physically changed (on disk) since the last successful compilation. Any
+       logically unchanged dependencies have their dependency information copied
+       over to the new dependency graph.
+    
+    3) During the `TraitCompiler`'s loop to consider all source files in the
+       program, if a source file is logically unchanged then its previous
+       analyses are "adopted" (and their 'register' steps are run). If the file
+       is logically changed, then it is re-analyzed as usual.
+    
+    4) Then, incremental build proceeds as before, with the new dependency graph
+       being used to determine the set of files which require re-emitting.
+    
+    This analysis reuse avoids template parsing operations in many circumstances
+    and significantly reduces the time it takes ngtsc to rebuild a large
+    application.
+    
+    Future work will increase performance even more, by tackling a variety of
+    other opportunities to reuse or avoid work.
+    
+    PR Close #34288
+
+commit 50cdc0ac1b1f7356e10833e927ec0f302461ab08
+Author: Alex Rickabaugh <alx+alxhub@alxandria.net>
+Date:   Mon Dec 9 16:24:14 2019 -0800
+
+    refactor(ivy): move analysis side effects into a register phase (#34288)
+    
+    Previously 'analyze' in the various `DecoratorHandler`s not only extracts
+    information from the decorators on the classes being analyzed, but also has
+    several side effects within the compiler:
+    
+    * it can register metadata about the types involved in global metadata
+      trackers.
+    * it can register information about which .ngfactory symbols are actually
+      needed.
+    
+    In this commit, these side-effects are moved into a new 'register' phase,
+    which runs after the 'analyze' step. Currently this is a no-op refactoring
+    as 'register' is always called directly after 'analyze'. In the future this
+    opens the door for re-use of prior analysis work (with only 'register' being
+    called, to apply the above side effects).
+    
+    Also as part of this refactoring, the reification of NgModule scope
+    information into the incremental dependency graph is moved to the
+    `NgtscProgram` instead of the `TraitCompiler` (which now only manages trait
+    compilation and does not have other side effects).
+    
+    PR Close #34288
+
+commit 252e3e948781cdd2efb7af46ec2988add341b3d3
+Author: Alex Rickabaugh <alx+alxhub@alxandria.net>
+Date:   Mon Dec 9 15:22:59 2019 -0800
+
+    refactor(ivy): formalize the compilation process for matched handlers (#34288)
+    
+    Prior to this commit, the `IvyCompilation` tracked the state of each matched
+    `DecoratorHandler` on each class in the `ts.Program`, and how they
+    progressed through the compilation process. This tracking was originally
+    simple, but had grown more complicated as the compiler evolved. The state of
+    each specific "target" of compilation was determined by the nullability of
+    a number of fields on the object which tracked it.
+    
+    This commit formalizes the process of compilation of each matched handler
+    into a new "trait" concept. A trait is some aspect of a class which gets
+    created when a `DecoratorHandler` matches the class. It represents an Ivy
+    aspect that needs to go through the compilation process.
+    
+    Traits begin in a "pending" state and undergo transitions as various steps
+    of compilation take place. The `IvyCompilation` class is renamed to the
+    `TraitCompiler`, which manages the state of all of the traits in the active
+    program.
+    
+    Making the trait concept explicit will support future work to incrementalize
+    the expensive analysis process of compilation.
+    
+    PR Close #34288
+
+commit c13a4b8c03a6006fc4bb8e47366f861421aee7c9
+Author: Pete Bacon Darwin <pete@bacondarwin.com>
+Date:   Thu Dec 12 10:09:00 2019 +0000
+
+    style(common): remove unnecessary jsdoc type (#34369)
+    
+    These types cause the compiler to give warnings,
+    which add noise to compilation logs.
+    
+    PR Close #34369
+
+commit 05c1398b4dfb903f031656dce3cc58438d1b2121
+Author: Pete Bacon Darwin <pete@bacondarwin.com>
+Date:   Wed Dec 11 15:23:57 2019 +0000
+
+    fix(ngcc): render UMD imports even if no prior imports (#34353)
+    
+    Previously the UMD rendering formatter assumed that
+    there would already be import (and an export) arguments
+    to the UMD factory function.
+    
+    This commit adds support for this corner case.
+    
+    Fixes #34138
+    
+    PR Close #34353
+
+commit 1583293694d9b1c0da437b9d5e98b80ce4484e08
+Author: owenmecham <owen.mecham@gmail.com>
+Date:   Wed Dec 11 00:23:08 2019 -0700
+
+    docs: ng-conf 2020 the musical (#34342)
+    
+    Added event and announcement info for ng-conf 2020
+    
+    PR Close #34342
+
+commit ad987021ce5a2a2bc498dcb38a8e64300c461cc9
+Author: Kara Erickson <karakara@google.com>
+Date:   Wed Dec 11 15:10:17 2019 -0800
+
+    Revert "build: update integration/bazel to rules_nodejs 0.42.1" (#34360)
+    
+    This reverts commit ec7ea77aa8d90d2ba32089e140ed716cb6aadb89 because it's part
+    of a PR that was red on CircleCI once it was merged into master (Windows tests
+    are only run on master, not on PRs).
+    
+    PR Close #34360
+
+commit 9a800e8fa269314a84a18bf6c309cada8fe50708
+Author: Kara Erickson <karakara@google.com>
+Date:   Wed Dec 11 15:09:00 2019 -0800
+
+    Revert "build: update @angular/bazel schematics to rules_nodejs 0.42.1" (#34360)
+    
+    This reverts commit 73fd10ddd5548ce899b897ba2779ff041914c2dc because it's part
+    of a PR that was red on CircleCI once it was merged into master (Windows tests
+    are only run on master, not on PRs).
+    
+    PR Close #34360
+
+commit 0bf926329777b8de4c83e4e1d1f1a8fd7b32cd7c
+Author: Kara Erickson <karakara@google.com>
+Date:   Wed Dec 11 15:08:36 2019 -0800
+
+    Revert "build: update @angular/bazel schematics to use html_insert_assets & pkg_web" (#34360)
+    
+    This reverts commit 6b905347bd2294bba703f6d38c983356af58946b because it's part
+    of a PR that was red on CircleCI once it was merged into master (Windows tests
+    are only run on master, not on PRs).
+    
+    PR Close #34360
+
+commit ef179e6a00e459084fcaeab2e10104a0d58b93a5
+Author: Kara Erickson <karakara@google.com>
+Date:   Wed Dec 11 15:07:26 2019 -0800
+
+    Revert "build: remove html_insert_assets complication from integration/bazel" (#34360)
+    
+    This reverts commit 810b7072d0a9ba0b07162f7a600a75347b06d379 because it's part
+    of a PR that was red on CircleCI once it was merged into master (Windows tests
+    are only run on master, not on PRs).
+    
+    PR Close #34360
+
+commit caaeb21e599d4ddab2d1a6471dea5d066d5c3a51
+Author: Kara Erickson <karakara@google.com>
+Date:   Wed Dec 11 15:06:12 2019 -0800
+
+    Revert "build: update integration/bazel & @angular/bazel schematics to rules_nodejs 0.42.1" (#34360)
+    
+    This reverts commit 4e38a973b158ba397903199abe1e008b0627d81c because it's part of a PR
+    that was red on CircleCI once it was merged into master (Windows tests are only run
+    on master, not on PRs).
+    
+    PR Close #34360
+
+commit c77656e2dd959cf70d4999f0cfc419f20a6f9e9e
+Author: Pete Bacon Darwin <pete@bacondarwin.com>
+Date:   Wed Dec 11 17:00:47 2019 +0000
+
+    fix(ngcc): handle imports in dts files when processing UMD (#34356)
+    
+    When statically evalulating UMD code it is possible to find
+    that we are looking for the declaration of an identifier that
+    actually came from a typings file (rather than a UMD file).
+    
+    Previously, the UMD reflection host would always try to use
+    a UMD specific algorithm for finding identifier declarations,
+    but when the id is actually in a typings file this resulted in the
+    returned declaration being the containing file of the declaration
+    rather than the declaration itself.
+    
+    Now the UMD reflection host will check to see if the file containing
+    the identifier is a typings file and use the appropriate stategy.
+    
+    PR Close #34356
+
+commit 5f2897be0b13f26019b91acb5ee0f5614b26ff79
+Author: Sonu Kapoor <sonukapoor@gmail.com>
+Date:   Wed Dec 11 13:28:19 2019 -0500
+
+    docs(forms): Update catchError to return an `observable` (#34357)
+    
+    Closes #34323
+    
+    PR Close #34357
+
+commit 6ce940315b84b800949e11b06db352dd228eacb5
+Author: Pete Bacon Darwin <pete@bacondarwin.com>
+Date:   Wed Dec 11 10:38:58 2019 +0000
+
+    fix(ivy): i18n - remove `translate` function when clearing translations (#34346)
+    
+    The `loadTranslations()` function will attach the `translate()` function
+    to `$localize.translate` to cause runtime translation to occur.
+    
+    We should cleanup after ourselves by unattaching this function when
+    we call `clearTranslations()`.
+    
+    Fixes #32781
+    
+    PR Close #34346
+
+commit 656607b64024e9001baa061632f950ac9709da5b
+Author: Greg Magolan <gmagolan@gmail.com>
+Date:   Wed Dec 4 22:19:02 2019 -0800
+
+    build: update integration/bazel & @angular/bazel schematics to rules_nodejs 0.42.1 (#34112)
+    
+    This release brings a bug fix that https://github.com/angular/angular/pull/34243 is waiting on in order to remove rules_nodejs patches: fix(builtin): additional_root_paths in pkg_web should also include paths in genfiles and bin dirs (bazelbuild/rules_nodejs#1402)
+    
+    PR Close #34112
+
+commit b0534177e01a07dd0c19e8610912e8305ad7c032
+Author: Greg Magolan <gmagolan@gmail.com>
+Date:   Fri Nov 29 09:50:30 2019 -0800
+
+    build: remove html_insert_assets complication from integration/bazel (#34112)
+    
+    For the purposes of the integration test the zone.js script & bundle script tags could just go into the source index.html itself. The purpose of the integration test is is to test @angular/bazel & ng_module & ng_package so there is no need to exercise html_insert_assets.
+    
+    PR Close #34112
+
+commit 7df2b4aeff6efd491527b2a4e6fe41fb44fbf153
+Author: Greg Magolan <gmagolan@gmail.com>
+Date:   Wed Nov 27 14:45:45 2019 -0800
+
+    build: update @angular/bazel schematics to use html_insert_assets & pkg_web (#34112)
+    
+    PR Close #34112
+
+commit bfeaa7d564fc2e983e839061dc6d84448d1a38e7
+Author: Greg Magolan <gmagolan@gmail.com>
+Date:   Wed Nov 27 14:13:16 2019 -0800
+
+    build: update @angular/bazel schematics to rules_nodejs 0.42.1 (#34112)
+    
+    PR Close #34112
+
+commit dd3b27e97137d1fbe59c365634a6df72791a5a47
+Author: Greg Magolan <gmagolan@gmail.com>
+Date:   Wed Nov 27 14:12:10 2019 -0800
+
+    build: update integration/bazel to rules_nodejs 0.42.1 (#34112)
+    
+    PR Close #34112
+
+commit db4f5087372b0db1b8f736b5ab4beb350f506a99
+Author: Andrew Kushnir <akushnir@google.com>
+Date:   Wed Dec 11 11:07:04 2019 -0800
+
+    docs: release notes for the v9.0.0-rc.6 release
+
+commit 08ea38f1972aeb2433323d941bfadba65c95d751
+Author: Keen Yee Liau <kyliau@umich.edu>
+Date:   Tue Dec 10 10:24:48 2019 -0800
+
+    fix(bazel): improve performance of tsHost.writeFile() (#34331)
+    
+    Removing from an array incurs O(n^2) cost, and could be mitigated with the use of a Set instead.
+    
+    PR Close #34331
+
+commit 8572911e94dd057c3eca87e1d558c1c332119891
+Author: Andrew Kushnir <akushnir@google.com>
+Date:   Wed Dec 4 16:57:32 2019 -0800
+
+    test(ivy): `class_binding` benchmark fixes (#34242)
+    
+    This commit fixes a couple issues that prevent `class_binding` benchmark from running: moving constants requires by the `benchmark` function before function declaration and referencing correct consts in template instructions.
+    
+    PR Close #34242
+
+commit f503832abe3e5ae16a53e87a93389cf406a1eee0
+Author: ajitsinghkaler <ajitsinghkaler0@gmail.com>
+Date:   Tue Dec 10 20:17:03 2019 +0530
+
+    docs: fix headers in "Getting Started" code-snippets (#34321)
+    
+    The headers of two of the code-snippets in the [Input section](https://angular.io/start#input)
+    of the "Getting Started" guide incorrectly referenced an non-existent
+    file path (`src/app/product-list/product-alerts.component.ts`).
+    
+    This commit fixes the headers to show the correct file path
+    (`src/app/product-alerts/product-alerts.component.ts`).
+    
+    Fixes #34320
+    
+    PR Close #34321
+
+commit b72c7a89a915503c67c04b777b55c3008bc68602
+Author: JoostK <joost.koehoorn@gmail.com>
+Date:   Tue Dec 3 21:25:27 2019 +0100
+
+    refactor(ivy): include generic type for `ModuleWithProviders` in .d.ts files (#34235)
+    
+    The `ModuleWithProviders` type has an optional type parameter that
+    should be specified to indicate what NgModule class will be provided.
+    This enables the Ivy compiler to statically determine the NgModule type
+    from the declaration files. This type parameter will become required in
+    the future, however to aid in the migration the compiler will detect
+    code patterns where using `ModuleWithProviders` as return type is
+    appropriate, in which case it transforms the emitted .d.ts files to
+    include the generic type argument.
+    
+    This should reduce the number of occurrences where `ModuleWithProviders`
+    is referenced without its generic type argument.
+    
+    Resolves FW-389
+    
+    PR Close #34235
+
+commit a8fced88469b07d39c312b05c4bfe47d626514c1
+Author: Alex Rickabaugh <alx+alxhub@alxandria.net>
+Date:   Tue Nov 19 12:20:57 2019 -0800
+
+    refactor(ivy): abstract .d.ts file transformations (#34235)
+    
+    This commit refactors the way the compiler transforms .d.ts files during
+    ngtsc builds. Previously the `IvyCompilation` kept track of a
+    `DtsFileTransformer` for each input file. Now, any number of
+    `DtsTransform` operations that need to be applied to a .d.ts file are
+    collected in the `DtsTransformRegistry`. These are then ran using a
+    single `DtsTransformer` so that multiple transforms can be applied
+    efficiently.
+    
+    PR Close #34235
+
+commit 0984fbc74804f69ed7a265bf46f13f5ca156e3f1
+Author: JoostK <joost.koehoorn@gmail.com>
+Date:   Sat Dec 7 17:26:25 2019 +0100
+
+    fix(compiler-cli): allow declaration-only template type check members (#34296)
+    
+    The metadata collector for View Engine compilations emits error symbols
+    for static class members that have not been initialized, which prevents
+    a library from building successfully when `strictMetadataEmit` is
+    enabled, which is recommended for libraries to avoid issues in library
+    consumers. This is troublesome for libraries that are adopting static
+    members for the Ivy template type checker: these members don't need a
+    value assignment as only their type is of importance, however this
+    causes metadata errors. As such, a library used to be required to
+    initialize the special static members to workaround this error,
+    undesirably introducing a code-size overhead in terms of emitted
+    JavaScript code.
+    
+    This commit modifies the collector logic to specifically ignore
+    the special static members for Ivy's template type checker, preventing
+    any errors from being recorded during the metadata collection.
+    
+    PR Close #34296
+
+commit 22ad701134ebfa9b334935592682b595427aec50
+Author: JoostK <joost.koehoorn@gmail.com>
+Date:   Sat Dec 7 16:43:08 2019 +0100
+
+    fix(ivy): inherit static coercion members from base classes (#34296)
+    
+    For Ivy's template type checker it is possible to let a directive
+    specify static members to allow a wider type for some input:
+    
+    ```typescript
+    export class MatSelect {
+      @Input() disabled: boolean;
+    
+      static ngAcceptInputType_disabled: boolean | string;
+    }
+    ```
+    
+    This allows a binding to the `MatSelect.disabled` input to be of type
+    boolean or string, whereas the `disabled` property itself is only of
+    type boolean.
+    
+    Up until now, any static `ngAcceptInputType_*` property was not
+    inherited for subclasses of a directive class. This is cumbersome, as
+    the directive's inputs are inherited, so any acceptance member should as
+    well. To resolve this limitation, this commit extends the flattening of
+    directive metadata to include the acceptance members.
+    
+    Fixes #33830
+    Resolves FW-1759
+    
+    PR Close #34296
