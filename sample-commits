@@ -49,7 +49,7 @@ commit 260a061f9f3e85b567a722cfa2b5aa8a84cfce2a
 Author: Kara Erickson <karakara@google.com>
 Date:   Wed Dec 18 15:53:15 2019 -0800
 
-    docs: release notes for the v9.0.0-rc.7 release
+    chore: release notes for the v9.0.0-rc.7 release
 
 commit cf37c003ffc4e1307a174d6f58e5ed435db68e7e
 Author: crisbeto <crisbeto@abv.bg>
@@ -529,7 +529,7 @@ commit 6bfe214346b5b7c0e7ede3848c2975a707fbf9ab
 Author: ajitsinghkaler <ajitsinghkaler0@gmail.com>
 Date:   Fri Dec 13 03:39:20 2019 +0530
 
-    docs: add products.ts file on getting started page (#34301)
+    chore: add products.ts file on getting started page (#34301)
     
     in the getting started page (first tutorial) file products.ts which was not shown and was only present in the StackBlitz examples. So added a refrence that it is present in the example and also added a note that examples may carry filenames not present please look at StackBliz examples for details
     
@@ -764,7 +764,7 @@ commit a186dbc1d42ea7d492dcc4a587684926112832a8
 Author: ajitsinghkaler <ajitsinghkaler0@gmail.com>
 Date:   Sun Dec 15 11:36:12 2019 +0530
 
-    docs(upgrade): add example links to `downgradeComponent()` function docs (#34406)
+    chore(upgrade): add example links to `downgradeComponent()` function docs (#34406)
     
     There were some extra examples for `downgradeComponent()` in the upgrade
     guide. Added a link to the relevant section of the guide in the
@@ -984,7 +984,7 @@ commit ea57587b7c5e9de6d790af58014b58e063176299
 Author: Pawel Kozlowski <pkozlowski.opensource@gmail.com>
 Date:   Thu Dec 12 14:27:02 2019 +0100
 
-    docs(ivy): document breaking changes for DebugElement classes and attributes (#34328)
+    chore(ivy): document breaking changes for DebugElement classes and attributes (#34328)
     
     PR Close #34328
 
@@ -1021,7 +1021,7 @@ commit a9e3cbd5342f7113661d0b0bbc1ca880c34493dc
 Author: Kapunahele Wong <kapunahelewong@gmail.com>
 Date:   Tue Nov 26 17:21:49 2019 -0500
 
-    docs: add docs about inputs and strictNullChecks to template typecheck (#34194)
+    chore: add docs about inputs and strictNullChecks to template typecheck (#34194)
     
     PR Close #34194
 
@@ -1343,7 +1343,7 @@ commit 1583293694d9b1c0da437b9d5e98b80ce4484e08
 Author: owenmecham <owen.mecham@gmail.com>
 Date:   Wed Dec 11 00:23:08 2019 -0700
 
-    docs: ng-conf 2020 the musical (#34342)
+    chore: ng-conf 2020 the musical (#34342)
     
     Added event and announcement info for ng-conf 2020
     
@@ -1434,7 +1434,7 @@ commit 5f2897be0b13f26019b91acb5ee0f5614b26ff79
 Author: Sonu Kapoor <sonukapoor@gmail.com>
 Date:   Wed Dec 11 13:28:19 2019 -0500
 
-    docs(forms): Update catchError to return an `observable` (#34357)
+    chore(forms): Update catchError to return an `observable` (#34357)
     
     Closes #34323
     
@@ -1504,7 +1504,7 @@ commit db4f5087372b0db1b8f736b5ab4beb350f506a99
 Author: Andrew Kushnir <akushnir@google.com>
 Date:   Wed Dec 11 11:07:04 2019 -0800
 
-    docs: release notes for the v9.0.0-rc.6 release
+    chore: release notes for the v9.0.0-rc.6 release
 
 commit 08ea38f1972aeb2433323d941bfadba65c95d751
 Author: Keen Yee Liau <kyliau@umich.edu>
@@ -1530,7 +1530,7 @@ commit f503832abe3e5ae16a53e87a93389cf406a1eee0
 Author: ajitsinghkaler <ajitsinghkaler0@gmail.com>
 Date:   Tue Dec 10 20:17:03 2019 +0530
 
-    docs: fix headers in "Getting Started" code-snippets (#34321)
+    chore: fix headers in "Getting Started" code-snippets (#34321)
     
     The headers of two of the code-snippets in the [Input section](https://angular.io/start#input)
     of the "Getting Started" guide incorrectly referenced an non-existent
