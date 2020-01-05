@@ -35,12 +35,12 @@ $ changelog-generator.py
 ## The approach to the assessment
 * Research on the various forms of changelog by digging through various repositories and projects download page.
 * Reading up on the different commit formats such Conventional Commits, Angular Convention, gitmoji to analyse and choose a syntax to develop the tool on. 
-* Choosing a subset of the syntax and writing SYNTAX.md to codify it.
+* Choosing a subset of the syntax and writing [SYNTAX.md](./SYNTAX.md) to codify it.
 * Getting a project that follows . In my case it was Angular project. Cloned it in on my machine and generated various types and sizes of sample commits from it.
 * Designing and developing Parser module which would read in commits (provided to it as a files based on sample commits from above) and generate hierarchical hashmap (python dictionary) of the changelog
     * Testing against the couple of sample commits generated from the angular project with output visualized on stdout
 * Designing and developing Markdown Writer module, and combining it with Parser module to write CHANGELOG.md based on the changelog in the form of hierarchical hashmap from the Parser module
-    * Testing against the couple of sample commits generated from the angular project with output in the CHANGELOG.d
+    * Testing against the couple of sample commits generated from the angular project with output in the CHANGELOG.md
 * Designing and developing Git Interface module which would talk the git repository to extract commits (and in future couple of more actions like rebase and etc.). Integrating with Parser and Markdown Write module.
 * Designing and developing CLI module with argparser to read in arguments passed to the program from the cli and enable more options with tool usage. Integrating with main core tool.
 
