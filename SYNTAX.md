@@ -4,7 +4,7 @@ The Syntax is a subset of and is heavily based on [Conventional Commits v1.0.0](
 ## Structure of Commit Message
 The commit message should be structured as follows:
 ```
-<type>[optional scope]: <description>
+<type>: <description>
 
 [optional body]
 
