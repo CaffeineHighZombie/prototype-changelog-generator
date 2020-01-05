@@ -1,0 +1,262 @@
+commit 8c6468a02541697c24634d6a65ff23959494a5f1
+Author: JoostK <joost.koehoorn@gmail.com>
+Date:   Sun Dec 15 14:28:51 2019 +0100
+
+    refactor(ivy): use absolute source spans in type checker (#34417)
+    
+    Previously, the type checker would compute an absolute source span by
+    combining an expression AST node's `ParseSpan` (relative to the start of
+    the expression) together with the absolute offset of the expression as
+    represented in a `ParseSourceSpan`, to arrive at a span relative to the
+    start of the file. This information is now directly available on an
+    expression AST node in the `AST.sourceSpan` property, which can be used
+    instead.
+    
+    PR Close #34417
+
+commit 23595272fe3aad8611909e69264f2ce4a96f8cbd
+Author: Paul Gschwendtner <paulgschwendtner@gmail.com>
+Date:   Wed Dec 18 17:41:24 2019 +0100
+
+    build: use vendored yarn version for bazel node toolchain (#34472)
+    
+    Instead of downloading Yarn separately for Bazel, we could use
+    our existing copy of Yarn that we maintain for CI jobs that do
+    not use Bazel. This ensures we use consistent versions of Yarn
+    across our CI jobs, and also avoids unnecessary downloads to the
+    Bazel mirror server, or Yarn download servers.
+    
+    PR Close #34472
+
+commit 9264f43511a14e72058951dc1ee7597a5b554388
+Author: Pete Bacon Darwin <pete@bacondarwin.com>
+Date:   Wed Dec 18 14:03:05 2019 +0000
+
+    refactor(ngcc): remove private declaration aliases (#34254)
+    
+    Now that the source to typings matching is able to handle
+    aliasing of exports, there is no need to handle aliases in private
+    declarations analysis.
+    
+    These were originally added to cope when the typings files had
+    to use the name that the original source files used when exporting.
+    
+    PR Close #34254
+
+commit 918d8c990904b35ba67ea60c4b985f22fab1e853
+Author: Pete Bacon Darwin <pete@bacondarwin.com>
+Date:   Wed Dec 18 14:03:05 2019 +0000
+
+    refactor(ngcc): slightly improve the info in error messages (#34254)
+    
+    PR Close #34254
+
+commit 31be29a9f302fee7184d1824634d98e03df9caf2
+Author: Pete Bacon Darwin <pete@bacondarwin.com>
+Date:   Wed Dec 18 14:03:05 2019 +0000
+
+    fix(ngcc): use the correct identifiers when updating typings files (#34254)
+    
+    Previously the identifiers used in the typings files were the same as
+    those used in the source files.
+    
+    When the typings files and the source files do not match exactly, e.g.
+    when one of them is flattened, while the other is a deep tree, it is
+    possible for identifiers to be renamed.
+    
+    This commit ensures that the correct identifier is used in typings files
+    when the typings file does not export the same name as the source file.
+    
+    Fixes https://github.com/angular/ngcc-validation/pull/608
+    
+    PR Close #34254
+
+commit f22a6eb00ea91037656753971ddaa9ad8554d3ec
+Author: Pete Bacon Darwin <pete@bacondarwin.com>
+Date:   Wed Dec 18 14:03:05 2019 +0000
+
+    fix(ngcc): correctly match aliased classes between src and dts files (#34254)
+    
+    The naïve matching algorithm we previously used to match declarations in
+    source files to declarations in typings files was based only on the name
+    of the thing being declared.  This did not handle cases where the declared
+    item had been exported via an alias - a common scenario when one of the two
+    file sets (source or typings) has been flattened, while the other has not.
+    
+    The new algorithm tries to overcome this by creating two maps of export
+    name to declaration (i.e. `Map<string, ts.Declaration>`).
+    One for the source files and one for the typings files.
+    It then joins these two together by matching export names, resulting in a
+    new map that maps source declarations to typings declarations directly
+    (i.e. `Map<ts.Declaration, ts.Declaration>`).
+    
+    This new map can handle the declaration names being different between the
+    source and typings as long as they are ultimately both exported with the
+    same alias name.
+    
+    Further more, there is one map for "public exports", i.e. exported via the
+    root of the source tree (the entry-point), and another map for "private
+    exports", which are exported from individual files in the source tree but
+    not necessarily from the root. This second map can be used to "guess"
+    the mapping between exports in a deep (non-flat) file tree, which can be
+    used by ngcc to add required private exports to the entry-point.
+    
+    Fixes #33593
+    
+    PR Close #34254
+
+commit e9fb5fdb894b30c78e6f23f51f3a634ce325a7d0
+Author: Pete Bacon Darwin <pete@bacondarwin.com>
+Date:   Wed Dec 18 14:03:05 2019 +0000
+
+    fix(ngcc): handle UMD re-exports (#34254)
+    
+    In TS we can re-export imports using statements of the form:
+    
+    ```
+    export * from 'some-import';
+    ```
+    
+    This is downleveled in UMD to:
+    
+    ```
+    function factory(exports, someImport) {
+      function __export(m) {
+        for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
+      }
+      __export(someImport);
+    }
+    ```
+    
+    This commit adds support for this.
+    
+    PR Close #34254
+
+commit 47666f548c8a475a79d95ffb5f4264f4bb76233f
+Author: Pete Bacon Darwin <pete@bacondarwin.com>
+Date:   Wed Dec 18 14:03:04 2019 +0000
+
+    fix(ngcc): handle CommonJS re-exports by reference (#34254)
+    
+    In TS we can re-export imports using statements of the form:
+    
+    ```
+    export * from 'some-import';
+    ```
+    
+    This can be downleveled in CommonJS to either:
+    
+    ```
+    __export(require('some-import'));
+    ```
+    
+    or
+    
+    ```
+    var someImport = require('some-import');
+    __export(someImport);
+    ```
+    
+    Previously we only supported the first downleveled version.
+    This commit adds support for the second version.
+    
+    PR Close #34254
+
+commit 0b837e2f0d4ac178b0ddd8f50c46c1dc97e9b12c
+Author: Pete Bacon Darwin <pete@bacondarwin.com>
+Date:   Wed Dec 18 14:03:04 2019 +0000
+
+    refactor(ngcc): use bundle src to create reflection hosts (#34254)
+    
+    Previously individual properties of the src bundle program were
+    passed to the reflection host constructors. But going forward,
+    more properties will be required. To prevent the signature getting
+    continually larger and more unwieldy, this change just passes the
+    whole src bundle to the constructor, allowing it to extract what it
+    needs.
+    
+    PR Close #34254
+
+commit dfecca29dab86c62d4c3a45036d2358194d0320f
+Author: Martin Probst <martin@probst.io>
+Date:   Mon Dec 9 14:25:15 2019 +0100
+
+    refactor: TypeScript 3.7 fixes. (#34372)
+    
+    This PR fixes more TypeScript 3.7 compilation issues.
+    
+    PR Close #34372
+
+commit 1eae7c81e979dfb8b503ea1d7c42025c1d4d7af7
+Author: Keen Yee Liau <kyliau@google.com>
+Date:   Tue Dec 17 16:57:17 2019 -0800
+
+    refactor(language-service): Append missing AttrAst to AstPath (#34459)
+    
+    When a HTML Ast containing an Attribute node is converted to a Template Ast,
+    the attribute node might get dropped from the Template Ast path.
+    This is because the AttrNode is not even in the Template Ast to begin with.
+    In this case, we manually fix the path by converting the Attribute node
+    to a AttrAst node and appending it to the path.
+    
+    This allows the `ExpressionVisitor` to properly visit the leaf node in the
+    TemplateAst path. We no longer need to visit the `Element` and look for
+    attributes.
+    
+    PR Close #34459
+
+commit a04f7c0d5ff5a820b40bc448c8fea558cf9b0b74
+Author: Keen Yee Liau <kyliau@umich.edu>
+Date:   Thu Dec 12 15:46:27 2019 -0800
+
+    fix(language-service): Proper completions for properties and events (#34445)
+    
+    This commit fixes autocompletions for properties and events bindings.
+    
+    The language service will no longer provide bindings like (click) or [id].
+    Instead, it'll infer the context based on the brackets and provide suggestions
+    without any brackets.
+    
+    This fix also adds support for alternative binding syntax such as
+    `bind-`, `on-`, and `bindon`.
+    
+    PR closes https://github.com/angular/vscode-ng-language-service/issues/398
+    PR closes https://github.com/angular/vscode-ng-language-service/issues/474
+    
+    PR Close #34445
+
+commit 9d1175e2b2b8bc8b282b15f56daac01e0537a5bf
+Author: Andrew Kushnir <akushnir@google.com>
+Date:   Tue Dec 10 16:23:56 2019 -0800
+
+    fix(ivy): improve ExpressionChangedAfterChecked error (#34381)
+    
+    Prior to this change, the ExpressionChangedAfterChecked error thrown in Ivy was missing useful information that was available in View Engine, specifically: missing property name for proprty bindings and also the content of the entire property interpolation (only a changed value was displayed) if one of expressions was changed unexpectedly. This commit improves the error message by including the mentioned information into the error text.
+    
+    PR Close #34381
+
+commit 3e201181bb9bc8da15b2a808a34c742458149851
+Author: Ayaz Hafiz <ayaz.hafiz.1@gmail.com>
+Date:   Wed Jul 31 14:47:25 2019 -0700
+
+    fix(ivy): correctly associate output bound events with directives (#31938)
+    
+    Previously, bound events were incorrectly bound to directives with
+    inputs matching the bound event attribute. This fixes that so bound
+    events can only be bound to directives with matching outputs.
+    
+    Adds tests for all kinds of directive matching on bound attributes.
+    
+    PR Close #31938
+
+commit 7938ff34b171e4bbf362f39d9e6e2c8e1abf6486
+Author: George Kalpakas <kalpakas.g@gmail.com>
+Date:   Thu Dec 5 21:02:57 2019 +0200
+
+    refactor(compiler-cli): avoid unnecessarily calling `getSourceFile()` twice in `PartialEvaluator` (#34441)
+    
+    This is not expected to have any noticeable perf impact, but it wasteful
+    nonetheless (and annoying when stepping through the code while debugging
+    `ngtsc`/`ngcc`).
+    
+    PR Close #34441
