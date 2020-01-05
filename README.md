@@ -39,7 +39,9 @@ $ changelog-generator.py
 * Getting a project that follows . In my case it was Angular project. Cloned it in on my machine and generated various types and sizes of sample commits from it.
 * Designing and developing Parser module which would read in commits (provided to it as a files based on sample commits from above) and generate hierarchical hashmap (python dictionary) of the changelog
     * Testing against the couple of sample commits generated from the angular project with output visualized on stdout
-* Designing and developing Markdown Writer module, and combining it with Parser module to write CHANGELOG.md based on the changelog in the form of hierarchical hasmap from the Parser module
+* Designing and developing Markdown Writer module, and combining it with Parser module to write CHANGELOG.md based on the changelog in the form of hierarchical hashmap from the Parser module
     * Testing against the couple of sample commits generated from the angular project with output in the CHANGELOG.d
-* Designing and developing Git 
+* Designing and developing Git Interface module which would talk the git repository to extract commits (and in future couple of more actions like rebase and etc.). Integrating with Parser and Markdown Write module.
+* Designing and developing CLI module with argparser to read in arguments passed to the program from the cli and enable more options with tool usage. Integrating with main core tool.
+
 
