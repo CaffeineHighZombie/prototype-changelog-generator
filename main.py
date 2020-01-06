@@ -33,7 +33,17 @@ def main(args):
         except git.exc.InvalidGitRepositoryError as e:
             print("ERROR: Git repository doesn't exist at: ", e)
             return None
-        for commit in repo.iter_commits():
+
+        if args.start and args.end:
+            commits_iterator = repo.iter_commits(args.start+'..'+args.end)
+        elif args.start:
+            commits_iterator = repo.iter_commits(args.start+'..HEAD')
+        elif args.end:
+            commits_iterator = repo.iter_commits(args.end)
+        else:
+            commits_iterator = repo.iter_commits()
+        
+        for commit in commits_iterator:
             commit_information.append((commit.hexsha, commit.summary))
 
     ## Declaring list to hold each of the feat, fix, chore and syntax exception commits
@@ -77,7 +87,10 @@ def main(args):
     if os.path.isfile('CHANGELOG.md'):
         os.rename('CHANGELOG.md', 'TEMP.md')
     changelog_filehand = open('CHANGELOG.md', 'w')
-    version_number = "1.0.0"
+    if args.version:
+        version_number = args.version
+    else:   
+        version_number = "1.0.0"
     current_datetime = datetime.datetime.now()
     ## Writing current version number and date of the version creation
     changelog_filehand.write('# {} ({})'.format(version_number, current_datetime.strftime('%Y-%m-%d')) + os.linesep)
