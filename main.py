@@ -57,15 +57,45 @@ def main(args):
     grunt_messages = ('refactor', 'docs')
 
     for commit_hash, commit_message in commit_information:
-        if commit_message.startswith('feat:'):
-            feat_string = '* {} ({})'.format(commit_message.replace('feat:', '', 1), commit_hash[:7])
-            feat_list.append(feat_string)
-        elif commit_message.startswith('fix:'):
-            fix_string = '* {} ({})'.format(commit_message.replace('fix:', '', 1), commit_hash[:7])
-            fix_list.append(fix_string)
-        elif commit_message.startswith('chore:'):
-            chore_string = '* {} ({})'.format(commit_message.replace('chore:', '', 1), commit_hash[:7])
-            chore_list.append(chore_string)
+        if commit_message.startswith('feat'):
+            try:
+                commit_message_list = commit_message.split(':', maxsplit=1)
+                head_string = '* '
+                element_string = commit_message_list[0].replace('feat','')
+                if element_string:
+                    scope_string = element_string.strip('()')
+                    head_string = head_string + '**' + scope_string + '**'
+                message_string = '{} {} ({})'.format(head_string, commit_message_list[1], commit_hash[:7])
+                feat_list.append(message_string)
+            except:
+                exception_string = 'Commit Hash: {} | Subject: {}'.format(commit_hash, commit_message)
+                exception_list.append(exception_string)                
+        elif commit_message.startswith('fix'):
+            try:
+                commit_message_list = commit_message.split(':', maxsplit=1)
+                head_string = '* '
+                element_string = commit_message_list[0].replace('fix','')
+                if element_string:
+                    scope_string = element_string.strip('()')
+                    head_string = head_string + '**' + scope_string + '**'
+                message_string = '{} {} ({})'.format(head_string, commit_message_list[1], commit_hash[:7])
+                fix_list.append(message_string)
+            except:
+                exception_string = 'Commit Hash: {} | Subject: {}'.format(commit_hash, commit_message)
+                exception_list.append(exception_string)                
+        elif commit_message.startswith('chore'):
+            try:
+                commit_message_list = commit_message.split(':', maxsplit=1)
+                head_string = '* '
+                element_string = commit_message_list[0].replace('chore','')
+                if element_string:
+                    scope_string = element_string.strip('()')
+                    head_string = head_string + '**' + scope_string + '**'
+                message_string = '{} {} ({})'.format(head_string, commit_message_list[1], commit_hash[:7])
+                chore_list.append(message_string)
+            except:
+                exception_string = 'Commit Hash: {} | Subject: {}'.format(commit_hash, commit_message)
+                exception_list.append(exception_string)                
         elif commit_message.startswith(grunt_messages):
             pass
         else:
