@@ -54,7 +54,7 @@ def main(args):
     
     ## Grunt Commit Message. This will not be part of the changelog and also, won't to
     ## syntax violations
-    grunt_messages = ('refactor', 'docs', 'chore', 'build', 'ci', 'test', 'style')
+    grunt_messages = ('refactor', 'docs', 'chore', 'build', 'ci', 'test', 'style', 'design', 'doc', 'cleanup')
 
     for commit_hash, commit_message in commit_information:
         if commit_message.startswith('feat'):
