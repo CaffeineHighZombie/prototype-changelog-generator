@@ -4,18 +4,12 @@ import os
 import datetime
 import argparse
 import git
- 
-# def feat_commit(commit_msg, commit_hash):
-#     print(commit_msg, commit_hash)
-    
-# def fix_commit(commit_msg, commit_hash):
-#     print(commit_msg, commit_hash)
-    
-# def chore_commit(commit_msg, commit_hash):
-#     print(commit_msg, commit_hash)
 
 def main(args):
+    ## Data Container which will hold parsed tuples of commit hash and header
     commit_information = list()
+    ## If -f/--filename option is given open up local commit file and parse the information. 
+    ## Else access the local git repo and interface with it directly
     if args.filename:
         filename = args.filename
         try:
@@ -56,6 +50,7 @@ def main(args):
     ## syntax violations
     grunt_messages = ('refactor', 'docs', 'chore', 'build', 'ci', 'test', 'style', 'design', 'doc', 'cleanup')
 
+    ## Markdown generator based on the message type
     for commit_hash, commit_message in commit_information:
         if commit_message.startswith('feat'):
             try:
