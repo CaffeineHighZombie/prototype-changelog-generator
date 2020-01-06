@@ -3,6 +3,7 @@
 import os
 import datetime
 import argparse
+import git
  
 # def feat_commit(commit_msg, commit_hash):
 #     print(commit_msg, commit_hash)
@@ -27,7 +28,13 @@ def main(args):
             commit_information.append((commit_hash, commit_message))
         f.close()
     else:
-        return None
+        try:
+            repo = git.Repo()
+        except git.exc.InvalidGitRepositoryError as e:
+            print("ERROR: Git repository doesn't exist at: ", e)
+            return None
+        for commit in repo.iter_commits():
+            commit_information.append((commit.hexsha, commit.summary))
 
     ## Declaring list to hold each of the feat, fix, chore and syntax exception commits
     feat_list = list()
