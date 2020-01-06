@@ -10,14 +10,17 @@ The commit message should be structured as follows:
 
 [optional footer(s)]
 ```
-## Structural Elements of Commit Message
-The commit contains the following structural elements:
+The **header** is mandatory. The **type** and **description** of the header is also mandatory. The **scope** of the header is optional.
+## Structural Elements (Type) of Commit Message
+The commit contains the following structural elements (types):
 1. fix: a commit of the type fix patches a bug in your codebase (this correlates with PATCH in semantic versioning).
 2. feat: a commit of the type feat introduces a new feature to the codebase (this correlates with MINOR in semantic versioning).
 3. chore: a commit of the type chore involves no production code change and deals with updating grunt tasks such as:
     * implementation (of an existing feature, which doesn't involve a fix)
     * configuration (like the .gitignore or .gitattributes)
     * private internal methods
+4. perf: a commit of the type perf involves code change involving performance improvement.
+5. The tool also takes into account other grunt types which don't add to changelog but are sytactically correct (and needed) messages such as: *refactor*, *docs*, *build*, *ci*, *test*, *style*, *design*, *doc*, *cleanup*. These are common grunt message types from the Angular convention as well.
 
 ## Examples of Commit Messages
 Following are the examples of the commit messages the prototype changelog generator works on \(the examples are based on actual commit messages from [Angular repository's commit history](https://github.com/angular/angular/commits/master) which was used during development and testing\):
@@ -92,3 +95,11 @@ Fixes #34291
 
 PR Close #34301
 ```
+### 4. perf
+```
+perf(ivy): eagerly parse the template twice during analysis (#34334)                                                                                                                             A quirk of the Angular template parser is that when parsing templates in the "default" mode, with options specified by the user, the source mapping information in the template AST may be inaccurate. As a result, the compiler parses the template twice: once for "emit" and once to produce an AST with accurate sourcemaps for diagnostic production. 
+
+PR Close #34334
+```
+### Addendum
+Example commit files of various length with varied message types are available in the [sample-commit-files directory](./sample-commit-files). This can be used with prototype changelog generator with -f / --filename option for debugging and validation purposes among others.
