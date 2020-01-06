@@ -26,6 +26,10 @@ def main(filename):
     chore_list = list()
     exception_list = list()
     
+    ## Grunt Commit Message. This will not be part of the changelog and also, won't to
+    ## syntax violations
+    grunt_messages = ('refactor', 'docs')
+
     for line in f:
         commit_hash, commit_message = line.rstrip().split('--HASH--')
         if commit_message.startswith('feat:'):
@@ -37,6 +41,8 @@ def main(filename):
         elif commit_message.startswith('chore:'):
             chore_string = '* {} ({})'.format(commit_message.replace('chore:', '', 1), commit_hash[:7])
             chore_list.append(chore_string)
+        elif commit_message.startswith(grunt_messages):
+            pass
         else:
             exception_string = 'Commit Hash: {} | Subject: {}'.format(commit_hash, commit_message)
             exception_list.append(exception_string)
