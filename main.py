@@ -109,44 +109,47 @@ def main(args):
         with open('Syntax-Violations', 'w') as filehand:
             for line in exception_list:
                 filehand.write(line + os.linesep)
-    # else:
-    ## Checking if the CHANGELOG.md exists. If so, then temporarily rename it
-    ## write the entry for each of the feat, fix and chore, and then append earlier
-    ## CHANGELOG text now in a temp file into it and clean up. Else, write completly 
-    ## new Changelog entry
-    if os.path.isfile('CHANGELOG.md'):
-        os.rename('CHANGELOG.md', 'TEMP.md')
-    changelog_filehand = open('CHANGELOG.md', 'w')
-    if args.version:
-        version_number = args.version
-    else:   
-        version_number = "1.0.0"
-    current_datetime = datetime.datetime.now()
-    ## Writing current version number and date of the version creation
-    changelog_filehand.write('# {} ({})'.format(version_number, current_datetime.strftime('%Y-%m-%d')) + os.linesep)
-    
-    if len(fix_list) > 0:
-        changelog_filehand.write('### Bug Fixes' + os.linesep)
-        for line in fix_list:
-            changelog_filehand.write(line + os.linesep)
+        print('\n########')
+        print('ERROR with git commit message syntax.\nPlease find the commits with commit hash and subject in the "Syntax-Violation" file causing error. Run "git rebase" to correct those errors and re-run the tool.')
+        print('########\n')
+    else:
+        ## Checking if the CHANGELOG.md exists. If so, then temporarily rename it
+        ## write the entry for each of the feat, fix and chore, and then append earlier
+        ## CHANGELOG text now in a temp file into it and clean up. Else, write completly 
+        ## new Changelog entry
+        if os.path.isfile('CHANGELOG.md'):
+            os.rename('CHANGELOG.md', 'TEMP.md')
+        changelog_filehand = open('CHANGELOG.md', 'w')
+        if args.version:
+            version_number = args.version
+        else:   
+            version_number = "1.0.0"
+        current_datetime = datetime.datetime.now()
+        ## Writing current version number and date of the version creation
+        changelog_filehand.write('# {} ({})'.format(version_number, current_datetime.strftime('%Y-%m-%d')) + os.linesep)
+        
+        if len(fix_list) > 0:
+            changelog_filehand.write('### Bug Fixes' + os.linesep)
+            for line in fix_list:
+                changelog_filehand.write(line + os.linesep)
 
-    if len(feat_list) > 0:
-        changelog_filehand.write('### Features' + os.linesep)
-        for line in feat_list:
-            changelog_filehand.write(line + os.linesep)
+        if len(feat_list) > 0:
+            changelog_filehand.write('### Features' + os.linesep)
+            for line in feat_list:
+                changelog_filehand.write(line + os.linesep)
 
-    if len(perf_list) > 0:
-        changelog_filehand.write('### Performance Improvements' + os.linesep)
-        for line in perf_list:
-            changelog_filehand.write(line + os.linesep)
+        if len(perf_list) > 0:
+            changelog_filehand.write('### Performance Improvements' + os.linesep)
+            for line in perf_list:
+                changelog_filehand.write(line + os.linesep)
 
-    if os.path.isfile('TEMP.md'):
-        with open('TEMP.md') as filehand:
-            for line in filehand:
-                changelog_filehand.write(line)
-        os.remove('TEMP.md')
-    
-    changelog_filehand.close()
+        if os.path.isfile('TEMP.md'):
+            with open('TEMP.md') as filehand:
+                for line in filehand:
+                    changelog_filehand.write(line)
+            os.remove('TEMP.md')
+        
+        changelog_filehand.close()
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Prototype Changelog Generator')
