@@ -13,13 +13,22 @@ import argparse
 # def chore_commit(commit_msg, commit_hash):
 #     print(commit_msg, commit_hash)
 
-def main(filename):
-    try:
-        f = open(filename)
-    except FileNotFoundError as e:
-        print("FileNotFoundError: ", e)
+def main(args):
+    commit_information = list()
+    if args.filename:
+        filename = args.filename
+        try:
+            f = open(filename)
+        except FileNotFoundError as e:
+            print("FileNotFoundError: ", e)
+            return None
+        for line in f:
+            commit_hash, commit_message = line.rstrip().split('--HASH--')
+            commit_information.append((commit_hash, commit_message))
+        f.close()
+    else:
         return None
-    
+
     ## Declaring list to hold each of the feat, fix, chore and syntax exception commits
     feat_list = list()
     fix_list = list()
@@ -30,8 +39,7 @@ def main(filename):
     ## syntax violations
     grunt_messages = ('refactor', 'docs')
 
-    for line in f:
-        commit_hash, commit_message = line.rstrip().split('--HASH--')
+    for commit_hash, commit_message in commit_information:
         if commit_message.startswith('feat:'):
             feat_string = '* {} ({})'.format(commit_message.replace('feat:', '', 1), commit_hash[:7])
             feat_list.append(feat_string)
@@ -46,8 +54,6 @@ def main(filename):
         else:
             exception_string = 'Commit Hash: {} | Subject: {}'.format(commit_hash, commit_message)
             exception_list.append(exception_string)
-
-    f.close()
 
     ## Checking to see if there are any syntax violating commits for the current changelog
     ## if so, then writing it to a reference file with commit hash and subject for the 
@@ -99,6 +105,4 @@ if __name__ == '__main__':
     parser.add_argument('-s', '--start', help='Hash of the first commit for the current build. If none provided very first commit of the repo will be default.')
     parser.add_argument('-e', '--end', help='Hash of the last commit for the current build. If none provided very last commit of the repo will be default.')
     args = parser.parse_args()
-    if args.filename:
-        filename = args.filename
-    main(filename)
+    main(args)
