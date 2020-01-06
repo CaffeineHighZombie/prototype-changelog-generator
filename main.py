@@ -49,12 +49,12 @@ def main(args):
     ## Declaring list to hold each of the feat, fix, chore and syntax exception commits
     feat_list = list()
     fix_list = list()
-    chore_list = list()
+    perf_list = list()
     exception_list = list()
     
     ## Grunt Commit Message. This will not be part of the changelog and also, won't to
     ## syntax violations
-    grunt_messages = ('refactor', 'docs')
+    grunt_messages = ('refactor', 'docs', 'chore', 'build', 'ci', 'test', 'style')
 
     for commit_hash, commit_message in commit_information:
         if commit_message.startswith('feat'):
@@ -83,16 +83,16 @@ def main(args):
             except:
                 exception_string = 'Commit Hash: {} | Subject: {}'.format(commit_hash, commit_message)
                 exception_list.append(exception_string)                
-        elif commit_message.startswith('chore'):
+        elif commit_message.startswith('perf'):
             try:
                 commit_message_list = commit_message.split(':', maxsplit=1)
                 head_string = '* '
-                element_string = commit_message_list[0].replace('chore','')
+                element_string = commit_message_list[0].replace('perf','')
                 if element_string:
                     scope_string = element_string.strip('()')
                     head_string = head_string + '**' + scope_string + '**'
                 message_string = '{} {} ({})'.format(head_string, commit_message_list[1], commit_hash[:7])
-                chore_list.append(message_string)
+                perf_list.append(message_string)
             except:
                 exception_string = 'Commit Hash: {} | Subject: {}'.format(commit_hash, commit_message)
                 exception_list.append(exception_string)                
@@ -135,9 +135,9 @@ def main(args):
         for line in feat_list:
             changelog_filehand.write(line + os.linesep)
 
-    if len(chore_list) > 0:
-        changelog_filehand.write('### Improvements' + os.linesep)
-        for line in chore_list:
+    if len(perf_list) > 0:
+        changelog_filehand.write('### Performance Improvements' + os.linesep)
+        for line in perf_list:
             changelog_filehand.write(line + os.linesep)
 
     if os.path.isfile('TEMP.md'):
