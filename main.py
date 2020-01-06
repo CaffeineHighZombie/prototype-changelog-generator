@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
-import sys
 import os
 import datetime
+import argparse
  
 # def feat_commit(commit_msg, commit_hash):
 #     print(commit_msg, commit_hash)
@@ -87,8 +87,12 @@ def main(filename):
     changelog_filehand.close()
 
 if __name__ == '__main__':
-    if len(sys.argv)==2:
-        filename = sys.argv[1]
-    else:
-        filename = 'sample-commits-10'
+    parser = argparse.ArgumentParser(description='Prototype Changelog Generator')
+    parser.add_argument('-f', '--filename', help='Filename of the commit file (For debugging purpose)')
+    parser.add_argument('-v', '--version', help='Version of the current build. Default "1.0.0"')
+    parser.add_argument('-s', '--start', help='Hash of the first commit for the current build. If none provided very first commit of the repo will be default.')
+    parser.add_argument('-e', '--end', help='Hash of the last commit for the current build. If none provided very last commit of the repo will be default.')
+    args = parser.parse_args()
+    if args.filename:
+        filename = args.filename
     main(filename)
